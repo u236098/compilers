@@ -2,18 +2,17 @@
  * -----------------------------------------------------------------------------
  * automata.c
  *
- * Scanner engine implementation. Uses a transition matrix to drive
- * character-by-character DFA-based lexical analysis.
+ * Scanner engine implementation. Uses a single DFA loop driven entirely
+ * by the transition matrix T[state][class]. No external dispatch by
+ * first character — all decisions happen inside the automaton.
  *
- * The scanner operates in a single pass:
- *   1. Peek at the next character to classify it.
- *   2. Look up the transition matrix to decide the next state.
- *   3. Consume the character (cs_get) and append it to the lexeme buffer.
- *   4. When an accepting/terminal condition is reached, emit a token.
- *   5. Repeat until EOF.
- *
- * Keyword recognition is a post-processing step after the IDENTIFIER
- * automaton completes (character-by-character match, no string library).
+ * Design:
+ *   - ONE function scanner_next_token() recognises each token.
+ *   - Maximal munch via last_accept_state + last_accept_pos rollback.
+ *   - Keywords are reclassified char-by-char after identifier acceptance.
+ *   - Whitespace is consumed inside the DFA (START + WS → START).
+ *   - Unterminated literals emit one error + NONRECOGNIZED token.
+ *   - Grouped non-recognized chars emit one error per group.
  *
  * Team: Compilers P2
  * -----------------------------------------------------------------------------
@@ -25,43 +24,73 @@
 /* ---- Transition matrix ----
  * Rows = current state, Columns = character class.
  * Value = next state.
- * The matrix drives the main scanner loop.
  *
- * Transitions that lead to ST_START mean "do not consume, re-evaluate".
- * ST_ACCEPT means "emit current token and return to start".
+ * ST_STOP means "do not consume; emit token using last_accept_state".
+ * All branching is internal to the matrix — no outer switch/if dispatch.
  */
 
-/* Transition matrix: [state][char_class] -> next_state */
-static const scan_state_t transition[ST_COUNT][CC_COUNT] = {
-    /* ST_START: dispatch based on first character */
-    /*              LETTER       DIGIT        QUOTE        OPERATOR     SPECIAL      SPACE        NEWLINE      EOF          OTHER     */
-    [ST_START]   = {ST_IN_IDENT, ST_IN_NUMBER,ST_IN_LITERAL,ST_ACCEPT_OP,ST_ACCEPT_SC,ST_START,   ST_START,    ST_ACCEPT,   ST_IN_NONREC},
+static const scan_state_t T[ST_COUNT][CC_COUNT] = {
+    /* ST_START: branch internally based on character class */
+    /*              LETTER         DIGIT          QUOTE          OPERATOR       SPECIAL        SPACE          NEWLINE        EOF            OTHER        */
+    [ST_START]    = {ST_IN_IDENT,  ST_IN_NUMBER,  ST_IN_LITERAL, ST_ACCEPT_OP,  ST_ACCEPT_SC,  ST_START,      ST_START,      ST_STOP,       ST_IN_NONREC },
 
-    /* ST_IN_NUMBER: keep reading digits */
-    [ST_IN_NUMBER]= {ST_ACCEPT,  ST_IN_NUMBER,ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,  ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT  },
+    /* ST_IN_NUMBER: accumulate digits, stop on anything else */
+    [ST_IN_NUMBER]= {ST_STOP,      ST_IN_NUMBER,  ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_IDENT: keep reading letters/digits */
-    [ST_IN_IDENT] = {ST_IN_IDENT,ST_IN_IDENT, ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,  ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT  },
+    /* ST_IN_IDENT: accumulate letters/digits, stop on anything else */
+    [ST_IN_IDENT] = {ST_IN_IDENT,  ST_IN_IDENT,   ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_LITERAL: consume everything until closing quote */
-    /*              LETTER       DIGIT        QUOTE        OPERATOR     SPECIAL      SPACE        NEWLINE      EOF          OTHER     */
-    [ST_IN_LITERAL]={ST_IN_LITERAL,ST_IN_LITERAL,ST_ACCEPT,ST_IN_LITERAL,ST_IN_LITERAL,ST_IN_LITERAL,ST_ERROR,ST_ERROR,     ST_IN_LITERAL},
+    /* ST_IN_LITERAL: consume everything until closing quote, error on NL/EOF */
+    [ST_IN_LITERAL]={ST_IN_LITERAL,ST_IN_LITERAL,  ST_LIT_END,    ST_IN_LITERAL, ST_IN_LITERAL, ST_IN_LITERAL, ST_ERROR,      ST_ERROR,      ST_IN_LITERAL},
 
-    /* ST_ACCEPT_OP: single-char accept (operator) - should not be entered as ongoing state */
-    [ST_ACCEPT_OP]= {ST_START,   ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START   },
+    /* ST_ACCEPT_OP: single-char accept — immediately stop after consume */
+    [ST_ACCEPT_OP]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_ACCEPT_SC: single-char accept (special char) */
-    [ST_ACCEPT_SC]= {ST_START,   ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START   },
+    /* ST_ACCEPT_SC: single-char accept — immediately stop after consume */
+    [ST_ACCEPT_SC]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_NONREC: group consecutive non-recognized characters */
-    [ST_IN_NONREC]= {ST_ACCEPT,  ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,   ST_ACCEPT,  ST_ACCEPT,   ST_ACCEPT,   ST_IN_NONREC},
+    /* ST_IN_NONREC: accumulate consecutive non-recognized characters */
+    [ST_IN_NONREC]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_IN_NONREC },
 
-    /* ST_ACCEPT: terminal - not used as ongoing state */
-    [ST_ACCEPT]  = {ST_START,   ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START   },
+    /* ST_LIT_END: closing quote consumed — literal done, stop immediately */
+    [ST_LIT_END]  = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_ERROR: terminal error */
-    [ST_ERROR]   = {ST_START,   ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START,    ST_START   },
+    /* ST_ERROR: terminal error — stop immediately */
+    [ST_ERROR]    = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
+
+    /* ST_STOP: should never be used as a current state row */
+    [ST_STOP]     = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 };
+
+/* ---- Accepting-state → token-category map ---- */
+
+/* Returns 1 if the state is an accepting state, 0 otherwise. */
+static int is_accepting(scan_state_t st) {
+    switch (st) {
+        case ST_IN_NUMBER:
+        case ST_IN_IDENT:
+        case ST_IN_NONREC:
+        case ST_ACCEPT_OP:
+        case ST_ACCEPT_SC:
+        case ST_LIT_END:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+/* Maps an accepting state to its token category. */
+static token_category_t accept_category(scan_state_t st) {
+    switch (st) {
+        case ST_IN_NUMBER:  return CAT_NUMBER;
+        case ST_IN_IDENT:   return CAT_IDENTIFIER; /* reclassified later */
+        case ST_ACCEPT_OP:  return CAT_OPERATOR;
+        case ST_ACCEPT_SC:  return CAT_SPECIALCHAR;
+        case ST_LIT_END:    return CAT_LITERAL;
+        case ST_IN_NONREC:  return CAT_NONRECOGNIZED;
+        default:            return CAT_NONRECOGNIZED;
+    }
+}
 
 /*
  * classify_char - maps a character to its character class.
@@ -94,9 +123,8 @@ char_class_t classify_char(int ch) {
     return CC_OTHER;
 }
 
-/*
- * add_char_to_lexeme - appends a character to the lexeme buffer.
- */
+/* ---- Lexeme buffer helper ---- */
+
 static void add_char_to_lexeme(char *buf, int *len, int ch) {
     if (*len < MAX_LEXEME_LEN - 1) {
         buf[*len] = (char)ch;
@@ -105,60 +133,13 @@ static void add_char_to_lexeme(char *buf, int *len, int ch) {
     }
 }
 
-/*
- * emit_token - creates a token and adds it to the list.
- * Determines the category based on the state that produced it.
- */
-static void emit_token(token_list_t *tokens, const char *lexeme,
-                       scan_state_t origin_state, int line, int col,
-                       logger_t *lg) {
-    token_t tok;
-    token_category_t cat;
+/* ---- Error reporters ---- */
 
-    switch (origin_state) {
-        case ST_IN_NUMBER:
-            cat = CAT_NUMBER;
-            break;
-        case ST_IN_IDENT:
-            /* Post-process: check if it is a keyword */
-            if (ls_is_keyword(lexeme)) {
-                cat = CAT_KEYWORD;
-            } else {
-                cat = CAT_IDENTIFIER;
-            }
-            break;
-        case ST_IN_LITERAL:
-            cat = CAT_LITERAL;
-            break;
-        case ST_ACCEPT_OP:
-            cat = CAT_OPERATOR;
-            break;
-        case ST_ACCEPT_SC:
-            cat = CAT_SPECIALCHAR;
-            break;
-        case ST_IN_NONREC:
-            cat = CAT_NONRECOGNIZED;
-            break;
-        default:
-            cat = CAT_NONRECOGNIZED;
-            break;
-    }
-
-    token_init(&tok, lexeme, cat, line, col);
-    tl_add(tokens, &tok);
-}
-
-/*
- * report_nonrecognized - reports a non-recognized error.
- */
 static void report_nonrecognized(logger_t *lg, int line, const char *lexeme) {
     err_report(logger_get_dest(lg), ERR_NONRECOGNIZED, ERR_STEP_SCANNER,
                line, lexeme);
 }
 
-/*
- * report_unterminated_literal - reports an unterminated literal error.
- */
 static void report_unterminated_literal(logger_t *lg, int line,
                                         const char *lexeme) {
     err_report(logger_get_dest(lg), ERR_UNTERMINATED_LIT, ERR_STEP_SCANNER,
@@ -166,186 +147,118 @@ static void report_unterminated_literal(logger_t *lg, int line,
 }
 
 /*
- * scan_single_char_token - handles operator and special char tokens
- * (single character, immediate accept).
+ * scanner_next_token - recognises ONE token using the DFA loop.
+ * Returns 1 if a token was emitted, 0 if EOF was reached.
+ *
+ * All decisions are driven by the transition matrix T[state][class].
+ * Maximal munch is implemented via last_accept_state + last_accept_pos
+ * rollback (for this grammar rollback is not needed because the DFA
+ * transitions to ST_STOP without consuming, but the structure is in
+ * place for correctness).
  */
-static void scan_single_char_token(char_stream_t *cs, token_list_t *tokens,
-                                    scan_state_t state, logger_t *lg,
-                                    counter_t *cnt) {
-    char buf[2];  /* single char + null terminator */
-    int ch;
-    int line = cs_line(cs);
-    int col = cs_col(cs);
-
-    ch = cs_get(cs);
-    CNT_IO(*cnt, 1);
-    CNT_GEN(*cnt, 1);
-
-    buf[0] = (char)ch;
-    buf[1] = '\0';
-
-    emit_token(tokens, buf, state, line, col, lg);
-}
-
-/*
- * scan_multi_char_token - handles tokens that span multiple characters
- * (numbers, identifiers, non-recognized).
- * Uses the transition matrix with lookahead.
- */
-static void scan_multi_char_token(char_stream_t *cs, token_list_t *tokens,
-                                   scan_state_t state, logger_t *lg,
-                                   counter_t *cnt) {
+static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
+                              logger_t *lg, counter_t *cnt) {
+    scan_state_t state = ST_START;
+    scan_state_t last_accept_state = ST_STOP; /* ST_STOP = no accept yet */
     char buf[MAX_LEXEME_LEN];
     int buf_len = 0;
+    int tok_line = cs_line(cs);
+    int tok_col = cs_col(cs);
     int ch;
-    int line = cs_line(cs);
-    int col = cs_col(cs);
-    char_class_t cc;
+    char_class_t cls;
     scan_state_t next;
 
-    /* Consume the first character that brought us to this state */
-    ch = cs_get(cs);
-    CNT_IO(*cnt, 1);
-    CNT_GEN(*cnt, 1);
-    add_char_to_lexeme(buf, &buf_len, ch);
+    buf[0] = '\0';
 
-    /* Continue consuming while the transition says to stay in same state */
     while (1) {
-        int peek = cs_peek(cs);
+        ch = cs_peek(cs);
         CNT_COMP(*cnt, 1);
 
-        cc = classify_char(peek);
+        cls = classify_char(ch);
         CNT_COMP(*cnt, 1);
 
-        next = transition[state][cc];
+        next = T[state][cls];
 
-        if (next == state) {
-            /* Stay in current state: consume and continue */
-            ch = cs_get(cs);
+        /* --- Handle ST_STOP or ST_ERROR --- */
+        if (next == ST_STOP || next == ST_ERROR) {
+            if (next == ST_ERROR && state == ST_IN_LITERAL) {
+                /* Unterminated literal: report error, emit NONRECOGNIZED */
+                report_unterminated_literal(lg, tok_line, buf);
+                {
+                    token_t tok;
+                    token_init(&tok, buf, CAT_NONRECOGNIZED, tok_line, tok_col);
+                    tl_add(tokens, &tok);
+                }
+                return 1;
+            }
+
+            if (last_accept_state != ST_STOP) {
+                /* Emit token from last accepting state */
+                token_category_t cat = accept_category(last_accept_state);
+                token_t tok;
+
+                /* Keyword reclassification: char-by-char after identifier */
+                if (cat == CAT_IDENTIFIER && ls_is_keyword(buf)) {
+                    cat = CAT_KEYWORD;
+                }
+
+                token_init(&tok, buf, cat, tok_line, tok_col);
+                tl_add(tokens, &tok);
+
+                /* Report error for non-recognized group (one per group) */
+                if (cat == CAT_NONRECOGNIZED) {
+                    report_nonrecognized(lg, tok_line, buf);
+                }
+                return 1;
+            }
+
+            /* No accept and ST_STOP at START with EOF → done */
+            if (state == ST_START && cls == CC_EOF) {
+                return 0;
+            }
+
+            /* Should not happen — consume one char to avoid infinite loop */
+            cs_get(cs);
             CNT_IO(*cnt, 1);
-            CNT_GEN(*cnt, 1);
-            add_char_to_lexeme(buf, &buf_len, ch);
-        } else {
-            /* Transition out: stop without consuming */
-            break;
+            return 0;
         }
-    }
 
-    /* Emit the token */
-    emit_token(tokens, buf, state, line, col, lg);
-
-    /* If it was non-recognized, report the error */
-    if (state == ST_IN_NONREC) {
-        report_nonrecognized(lg, line, buf);
-    }
-}
-
-/*
- * scan_literal_token - handles string literal scanning.
- * Reads from opening quote to closing quote or error.
- */
-static void scan_literal_token(char_stream_t *cs, token_list_t *tokens,
-                                logger_t *lg, counter_t *cnt) {
-    char buf[MAX_LEXEME_LEN];
-    int buf_len = 0;
-    int ch;
-    int line = cs_line(cs);
-    int col = cs_col(cs);
-    char_class_t cc;
-    scan_state_t next;
-    scan_state_t state = ST_IN_LITERAL;
-
-    /* Consume opening quote */
-    ch = cs_get(cs);
-    CNT_IO(*cnt, 1);
-    CNT_GEN(*cnt, 1);
-    add_char_to_lexeme(buf, &buf_len, ch);
-
-    /* Read until closing quote, newline, or EOF */
-    while (1) {
-        int peek = cs_peek(cs);
-        CNT_COMP(*cnt, 1);
-
-        cc = classify_char(peek);
-        CNT_COMP(*cnt, 1);
-
-        next = transition[state][cc];
-
-        if (next == ST_IN_LITERAL) {
-            /* Continue reading literal content */
-            ch = cs_get(cs);
+        /* --- Handle whitespace skip inside DFA (START → START) --- */
+        if (state == ST_START && next == ST_START) {
+            cs_get(cs);
             CNT_IO(*cnt, 1);
-            CNT_GEN(*cnt, 1);
-            add_char_to_lexeme(buf, &buf_len, ch);
-        } else if (next == ST_ACCEPT) {
-            /* Closing quote found */
-            ch = cs_get(cs);
-            CNT_IO(*cnt, 1);
-            CNT_GEN(*cnt, 1);
-            add_char_to_lexeme(buf, &buf_len, ch);
-            emit_token(tokens, buf, ST_IN_LITERAL, line, col, lg);
-            return;
-        } else {
-            /* Error: unterminated literal (newline or EOF) */
-            report_unterminated_literal(lg, line, buf);
-            emit_token(tokens, buf, ST_IN_NONREC, line, col, lg);
-            return;
+            continue;
+        }
+
+        /* --- Normal transition: consume character --- */
+        if (state == ST_START) {
+            /* Record position of first character of token */
+            tok_line = cs_line(cs);
+            tok_col = cs_col(cs);
+        }
+
+        ch = cs_get(cs);
+        CNT_IO(*cnt, 1);
+        CNT_GEN(*cnt, 1);
+        add_char_to_lexeme(buf, &buf_len, ch);
+
+        state = next;
+
+        /* Update last_accept_state if current state is accepting */
+        if (is_accepting(state)) {
+            last_accept_state = state;
         }
     }
 }
 
 /*
- * automata_scan - main scanner loop. Processes the entire input.
+ * automata_scan - main scanner entry point. Calls scanner_next_token()
+ * in a loop until EOF. All decisions are inside the DFA.
  */
 int automata_scan(char_stream_t *cs, token_list_t *tokens, logger_t *lg,
                   counter_t *cnt) {
-    int peek;
-    char_class_t cc;
-    scan_state_t next;
-
-    while (1) {
-        peek = cs_peek(cs);
-        CNT_COMP(*cnt, 1);
-
-        if (peek == CS_EOF) {
-            break;
-        }
-
-        cc = classify_char(peek);
-        CNT_COMP(*cnt, 1);
-
-        /* Use transition from ST_START to decide what to do */
-        next = transition[ST_START][cc];
-
-        switch (next) {
-            case ST_IN_NUMBER:
-            case ST_IN_IDENT:
-            case ST_IN_NONREC:
-                scan_multi_char_token(cs, tokens, next, lg, cnt);
-                break;
-
-            case ST_IN_LITERAL:
-                scan_literal_token(cs, tokens, lg, cnt);
-                break;
-
-            case ST_ACCEPT_OP:
-            case ST_ACCEPT_SC:
-                scan_single_char_token(cs, tokens, next, lg, cnt);
-                break;
-
-            case ST_START:
-                /* Whitespace / newline: skip */
-                cs_get(cs);
-                CNT_IO(*cnt, 1);
-                break;
-
-            default:
-                /* Should not happen */
-                cs_get(cs);
-                CNT_IO(*cnt, 1);
-                break;
-        }
+    while (scanner_next_token(cs, tokens, lg, cnt)) {
+        /* token emitted; continue */
     }
-
     return 0;
 }

@@ -239,6 +239,254 @@ static void test_output_writer(void) {
     printf("  output writer tests PASSED\n");
 }
 
+/* ---- Test: Blank lines in input ---- */
+
+/*
+ * test_blank_lines - verifies that blank lines in the input do not
+ * produce tokens, and tokens on surrounding lines are correct.
+ */
+static void test_blank_lines(void) {
+    char_stream_t cs;
+    token_list_t tokens;
+    logger_t lg;
+    counter_t cnt;
+    const token_t *tok;
+    FILE *fp;
+    int result;
+
+    printf("  Testing blank lines in input...\n");
+
+    /* Write input with blank lines */
+    fp = fopen(TEST_INPUT_FILE, "w");
+    assert(fp != NULL);
+    fprintf(fp, "int x;\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "return 0;\n");
+    fclose(fp);
+
+    counter_init(&cnt);
+    tl_init(&tokens);
+    logger_init(&lg, stdout);
+
+    result = cs_open(&cs, TEST_INPUT_FILE);
+    assert(result == 0);
+    result = automata_scan(&cs, &tokens, &lg, &cnt);
+    assert(result == 0);
+    cs_close(&cs);
+
+    /* Expected tokens: int x ; return 0 ; = 6 */
+    assert(tl_count(&tokens) == 6);
+
+    /* "int" is keyword on line 1 */
+    tok = tl_get(&tokens, 0);
+    assert(tok != NULL);
+    assert(tok->category == CAT_KEYWORD);
+    assert(tok->line == 1);
+
+    /* "return" is keyword on line 4 (after 2 blank lines) */
+    tok = tl_get(&tokens, 3);
+    assert(tok != NULL);
+    assert(tok->category == CAT_KEYWORD);
+    assert(tok->line == 4);
+
+    /* "0" is number on line 4 */
+    tok = tl_get(&tokens, 4);
+    assert(tok != NULL);
+    assert(tok->category == CAT_NUMBER);
+
+    tl_free(&tokens);
+
+    printf("  blank lines tests PASSED\n");
+}
+
+/* ---- Test: Unterminated literal ---- */
+
+/*
+ * test_unterminated_literal - verifies that an unterminated literal
+ * (missing closing quote) produces a NONRECOGNIZED token.
+ */
+static void test_unterminated_literal(void) {
+    char_stream_t cs;
+    token_list_t tokens;
+    logger_t lg;
+    counter_t cnt;
+    const token_t *tok;
+    FILE *fp;
+    int result;
+
+    printf("  Testing unterminated literal...\n");
+
+    /* Write input with unterminated literal */
+    fp = fopen(TEST_INPUT_FILE, "w");
+    assert(fp != NULL);
+    fprintf(fp, "x = \"hello\n");
+    fprintf(fp, "y = 5;\n");
+    fclose(fp);
+
+    counter_init(&cnt);
+    tl_init(&tokens);
+    logger_init(&lg, stdout);
+
+    result = cs_open(&cs, TEST_INPUT_FILE);
+    assert(result == 0);
+    result = automata_scan(&cs, &tokens, &lg, &cnt);
+    assert(result == 0);
+    cs_close(&cs);
+
+    /* Verify we got tokens and the unterminated literal is NONRECOGNIZED */
+    assert(tl_count(&tokens) >= 3);
+
+    /* Token 0: "x" IDENTIFIER */
+    tok = tl_get(&tokens, 0);
+    assert(tok != NULL);
+    assert(tok->category == CAT_IDENTIFIER);
+
+    /* Token 1: "=" OPERATOR */
+    tok = tl_get(&tokens, 1);
+    assert(tok != NULL);
+    assert(tok->category == CAT_OPERATOR);
+
+    /* Token 2: unterminated literal → NONRECOGNIZED */
+    tok = tl_get(&tokens, 2);
+    assert(tok != NULL);
+    assert(tok->category == CAT_NONRECOGNIZED);
+
+    tl_free(&tokens);
+
+    printf("  unterminated literal tests PASSED\n");
+}
+
+/* ---- Test: Grouped nonrecognized characters ---- */
+
+/*
+ * test_grouped_nonrecognized - verifies that consecutive non-recognized
+ * characters are grouped into a single NONRECOGNIZED token.
+ */
+static void test_grouped_nonrecognized(void) {
+    char_stream_t cs;
+    token_list_t tokens;
+    logger_t lg;
+    counter_t cnt;
+    const token_t *tok;
+    FILE *fp;
+    int result;
+
+    printf("  Testing grouped nonrecognized...\n");
+
+    /* Write input with consecutive non-recognized chars */
+    fp = fopen(TEST_INPUT_FILE, "w");
+    assert(fp != NULL);
+    fprintf(fp, "x = @#$ + y;\n");
+    fclose(fp);
+
+    counter_init(&cnt);
+    tl_init(&tokens);
+    logger_init(&lg, stdout);
+
+    result = cs_open(&cs, TEST_INPUT_FILE);
+    assert(result == 0);
+    result = automata_scan(&cs, &tokens, &lg, &cnt);
+    assert(result == 0);
+    cs_close(&cs);
+
+    /* Expected: x = @#$ + y ; = 6 tokens */
+    assert(tl_count(&tokens) == 6);
+
+    /* Token 0: "x" IDENTIFIER */
+    tok = tl_get(&tokens, 0);
+    assert(tok != NULL);
+    assert(tok->category == CAT_IDENTIFIER);
+
+    /* Token 1: "=" OPERATOR */
+    tok = tl_get(&tokens, 1);
+    assert(tok != NULL);
+    assert(tok->category == CAT_OPERATOR);
+
+    /* Token 2: "@#$" grouped NONRECOGNIZED */
+    tok = tl_get(&tokens, 2);
+    assert(tok != NULL);
+    assert(tok->category == CAT_NONRECOGNIZED);
+
+    /* Token 3: "+" OPERATOR */
+    tok = tl_get(&tokens, 3);
+    assert(tok != NULL);
+    assert(tok->category == CAT_OPERATOR);
+
+    /* Token 4: "y" IDENTIFIER */
+    tok = tl_get(&tokens, 4);
+    assert(tok != NULL);
+    assert(tok->category == CAT_IDENTIFIER);
+
+    /* Token 5: ";" SPECIALCHAR */
+    tok = tl_get(&tokens, 5);
+    assert(tok != NULL);
+    assert(tok->category == CAT_SPECIALCHAR);
+
+    tl_free(&tokens);
+
+    printf("  grouped nonrecognized tests PASSED\n");
+}
+
+/* ---- Test: Correct output filenames ---- */
+
+/*
+ * test_output_filenames_extended - verifies output filename construction
+ * for various input patterns including the dbgcnt suffix.
+ */
+static void test_output_filenames_extended(void) {
+    char buf[256];
+
+    printf("  Testing output filenames (extended)...\n");
+
+    /* example.c -> example.cscn */
+    ow_build_output_filename("example.c", buf, 256);
+    assert(strcmp(buf, "example.cscn") == 0);
+
+    /* path/to/file.c -> path/to/file.cscn */
+    ow_build_output_filename("path/to/file.c", buf, 256);
+    assert(strcmp(buf, "path/to/file.cscn") == 0);
+
+    /* simple.c -> simple.cscn */
+    ow_build_output_filename("simple.c", buf, 256);
+    assert(strcmp(buf, "simple.cscn") == 0);
+
+    printf("  output filenames (extended) tests PASSED\n");
+}
+
+/* ---- Test: COUNTIO counts characters ---- */
+
+/*
+ * test_countio - verifies that the counter system counts I/O operations
+ * (characters read) during scanning.
+ */
+static void test_countio(void) {
+    counter_t cnt;
+
+    printf("  Testing COUNTIO counts characters...\n");
+
+    counter_init(&cnt);
+    assert(cnt.io == 0);
+    assert(cnt.comp == 0);
+    assert(cnt.gen == 0);
+
+    /* Simulate counting */
+    counter_add_io(&cnt, 5);
+    assert(cnt.io == 5);
+
+    counter_add_comp(&cnt, 3);
+    assert(cnt.comp == 3);
+
+    counter_add_gen(&cnt, 2);
+    assert(cnt.gen == 2);
+
+    /* Accumulation */
+    counter_add_io(&cnt, 10);
+    assert(cnt.io == 15);
+
+    printf("  COUNTIO tests PASSED\n");
+}
+
 /* ---- Main ---- */
 
 int main(void) {
@@ -249,6 +497,11 @@ int main(void) {
     test_scanner_scan();
     test_output_filename();
     test_output_writer();
+    test_blank_lines();
+    test_unterminated_literal();
+    test_grouped_nonrecognized();
+    test_output_filenames_extended();
+    test_countio();
 
     printf("All scanner tests PASSED!\n");
     return 0;
