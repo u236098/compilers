@@ -24,53 +24,32 @@
 
 #include "../token_list/token_list.h"
 
-/* ---- Output format options ---- */
+// Output format options.
 #define OUTFORMAT_RELEASE 0
 #define OUTFORMAT_DEBUG   1
 
 #ifndef OUTFORMAT
-#define OUTFORMAT OUTFORMAT_RELEASE  /* default to RELEASE */
+#define OUTFORMAT OUTFORMAT_RELEASE  // default RELEASE format
 #endif
 
-/* ---- Token formatting delimiters ---- */
+// Token formatting delimiters.
 #define TOK_FMT_OPEN  '<'
 #define TOK_FMT_CLOSE '>'
 #define TOK_FMT_SEP   ','
 #define TOK_FMT_SPACE ' '
 
-/*
- * ow_build_output_filename - constructs the output filename by appending
- * the SCN_SUFFIX to the input filename's extension.
- *   input_filename: e.g. "example.c"
- *   output_buf:     buffer to write result e.g. "example.cscn"
- *   buf_len:        size of output_buf
- */
+// Builds output filename with .cscn pattern.
 void ow_build_output_filename(const char *input_filename, char *output_buf,
                               int buf_len);
 
-/*
- * ow_build_count_filename - constructs the debug count filename by appending
- * DBGCNT_SUFFIX to the input filename's extension.
- *   input_filename: e.g. "example.c"
- *   output_buf:     buffer to write result e.g. "example.cdbgcnt"
- *   buf_len:        size of output_buf
- */
+// Builds count filename with .cdbgcnt pattern.
 void ow_build_count_filename(const char *input_filename, char *output_buf,
                              int buf_len);
 
-/*
- * ow_write_token_file - writes the token list to the output .cscn file.
- *   tokens: the token list to write
- *   output_filename: path to the output file
- * Returns 0 on success, non-zero on error.
- */
+// Writes token list to output file (overwrite mode).
 int ow_write_token_file(const token_list_t *tokens, const char *output_filename);
 
-/*
- * ow_write_token_file_mode - same as ow_write_token_file with explicit
- * file mode control.
- *   append_mode: 0 => overwrite file ("w"), non-zero => append ("a")
- */
+// Writes token list with explicit append/overwrite mode.
 int ow_write_token_file_mode(const token_list_t *tokens,
                              const char *output_filename, int append_mode);
 

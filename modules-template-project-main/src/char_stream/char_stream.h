@@ -16,51 +16,35 @@
 
 #include <stdio.h>
 
-/* Sentinel value returned when end-of-file is reached */
+// Sentinel returned at end of file.
 #define CS_EOF (-1)
 
-/* Char stream state */
+// Cursor state for input stream.
 typedef struct {
-    FILE *fp;      /* input file handle               */
-    int current;   /* most recently read character     */
-    int line;      /* current line number (1-based)    */
-    int col;       /* current column number (1-based)  */
-    int has_peek;  /* 1 if a character has been peeked */
-    int peek_ch;   /* the peeked character             */
+    FILE *fp;      // Input file handle.
+    int current;   // Most recently consumed character.
+    int line;      // Current 1-based line number.
+    int col;       // Current 1-based column number.
+    int has_peek;  // 1 when lookahead is buffered.
+    int peek_ch;   // Buffered lookahead character.
 } char_stream_t;
 
-/*
- * cs_open - opens the input file and initialises the stream.
- * Returns 0 on success, non-zero on failure.
- */
+// Opens and initializes stream from filename.
 int cs_open(char_stream_t *cs, const char *filename);
 
-/*
- * cs_peek - returns the next character without consuming it.
- * Returns CS_EOF at end of file.
- */
+// Returns next character without consuming it.
 int cs_peek(char_stream_t *cs);
 
-/*
- * cs_get - reads and consumes the next character, advancing the cursor.
- * Updates line and column counters.
- * Returns CS_EOF at end of file.
- */
+// Consumes next character, updating line and column.
 int cs_get(char_stream_t *cs);
 
-/*
- * cs_line - returns the current line number.
- */
+// Returns current line.
 int cs_line(const char_stream_t *cs);
 
-/*
- * cs_col - returns the current column number.
- */
+// Returns current column.
 int cs_col(const char_stream_t *cs);
 
-/*
- * cs_close - closes the input file and resets the stream.
- */
+// Closes input file if open.
 void cs_close(char_stream_t *cs);
 
 #endif /* CHAR_STREAM_H */

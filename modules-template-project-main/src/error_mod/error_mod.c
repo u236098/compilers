@@ -10,9 +10,7 @@
 
 #include "error_mod.h"
 
-/*
- * err_get_message - returns template message for an error ID.
- */
+// Returns message template for an error ID.
 const char* err_get_message(int err_id) {
     switch (err_id) {
         case ERR_FILE_OPEN:        return ERR_MSG_FILE_OPEN;
@@ -24,12 +22,16 @@ const char* err_get_message(int err_id) {
     }
 }
 
-/*
- * err_report - prints a formatted error to the destination stream.
- */
+// Prints one formatted error message.
 void err_report(FILE *dest, int err_id, const char *step, int line,
                 const char *context) {
     const char *msg = err_get_message(err_id);
+    if (dest == NULL) {
+        dest = stdout;
+    }
+    if (step == NULL) {
+        step = ERR_STEP_SCANNER;
+    }
     if (context != NULL) {
         fprintf(dest, "[ERROR %d][%s] Line %d: %s: %s\n",
                 err_id, step, line, msg, context);

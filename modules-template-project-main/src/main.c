@@ -21,20 +21,16 @@
 
 #include "./main.h"
 
-FILE* ofile = NULL; /* The output handler for the project run */
+FILE* ofile = NULL; // Output handler used by template modules.
 
-/*
- * print_usage - displays usage information when arguments are incorrect.
- */
+// Prints CLI usage.
 static void print_usage(const char *prog_name) {
     fprintf(stderr, "Usage: %s <input.c>\n", prog_name);
 }
 
 #ifdef COUNTCONFIG
 #if OUTFORMAT == OUTFORMAT_DEBUG
-/*
- * write_count_summary - routes total counter output based on COUNTOUT/COUNTFILE.
- */
+// Routes count summary to stdout, .cscn, or .cdbgcnt according to flags.
 static void write_count_summary(const char *input_filename,
                                 const char *output_filename,
                                 const counter_t *cnt) {
@@ -63,11 +59,7 @@ static void write_count_summary(const char *input_filename,
 #endif
 #endif
 
-/*
- * run_scanner - orchestrates the scanning phase.
- *   input_filename: path to the .c input file
- * Returns 0 on success, non-zero on error.
- */
+// Orchestrates scanner execution for one input file.
 static int run_scanner(const char *input_filename) {
     char_stream_t cs;
     token_list_t tokens;
@@ -77,17 +69,18 @@ static int run_scanner(const char *input_filename) {
     char output_filename[MAX_FILENAME_BUF];
     int result;
 
-    /* Initialise subsystems */
+    if (input_filename == NULL) {
+        return ERR_FILE_OPEN;
+    }
+
+    // Initialize subsystems.
     counter_init(&cnt);
     tl_init(&tokens);
 
-    /* Build output filename: e.g. "example.c" -> "example.cscn" */
+    // Build output filename: input.c -> input.cscn.
     ow_build_output_filename(input_filename, output_filename, MAX_FILENAME_BUF);
 
-    /*
-     * Initialise logger destination:
-     * DEBUG_ON -> output file, DEBUG_OFF -> stdout.
-     */
+    // Initialize logger destination.
     if (DEBUG_FLAG == DEBUG_ON) {
         debug_out = fopen(output_filename, "w");
         if (debug_out == NULL) {
@@ -99,7 +92,7 @@ static int run_scanner(const char *input_filename) {
         logger_init(&lg, stdout);
     }
 
-    /* Open input file */
+    // Open input file.
     if (cs_open(&cs, input_filename) != 0) {
         err_report(logger_get_dest(&lg), ERR_FILE_OPEN, ERR_STEP_DRIVER,
                    0, input_filename);
@@ -112,10 +105,10 @@ static int run_scanner(const char *input_filename) {
 
     fprintf(stdout, "Scanning: %s\n", input_filename);
 
-    /* Run the scanner automaton */
+    // Run scanner.
     result = automata_scan(&cs, &tokens, &lg, &cnt);
 
-    /* Close input */
+    // Close input stream.
     cs_close(&cs);
 
     if (debug_out != NULL) {
@@ -124,7 +117,7 @@ static int run_scanner(const char *input_filename) {
         logger_init(&lg, NULL);
     }
 
-    /* Write the token list to the output .cscn file */
+    // Write token file.
     if (ow_write_token_file_mode(&tokens, output_filename,
                                  (DEBUG_FLAG == DEBUG_ON)) != 0) {
         err_report(logger_get_dest(&lg), ERR_FILE_OUTPUT, ERR_STEP_DRIVER,
@@ -142,23 +135,18 @@ static int run_scanner(const char *input_filename) {
 #endif
 #endif
 
-    /* (Future hook) Parser would be called here with the in-memory token list:
-     *   result = parser_run(&tokens);
-     */
-
-    /* Clean up */
+    // Future hook: parser can consume the in-memory token list here.
+    // Clean up.
     tl_free(&tokens);
 
     return result;
 }
 
-/*
- * main - entry point. Wrapper that calls scanner functions.
- */
+// Entry point wrapper.
 int main(int argc, char *argv[]) {
     int result;
 
-    ofile = stdout; /* Default output to stdout */
+    ofile = stdout;
 
     if (argc < MIN_ARGS) {
         print_usage(argv[0]);

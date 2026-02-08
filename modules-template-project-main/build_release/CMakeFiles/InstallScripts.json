@@ -1,0 +1,20 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/module_args/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/module_2/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/lang_spec/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/char_stream/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/token/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/token_list/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/error_mod/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/logger/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/counter/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/automata/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/src/out_writer/cmake_install.cmake",
+		"/Users/cabello/Desktop/Kobby/Compilers/compilers/modules-template-project-main/build_release/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

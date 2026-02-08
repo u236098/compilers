@@ -10,9 +10,7 @@
 
 #include "counter.h"
 
-/*
- * counter_init - zeros all counters.
- */
+// Zeros all counters.
 void counter_init(counter_t *cnt) {
     if (cnt == NULL) {
         return;
@@ -22,9 +20,7 @@ void counter_init(counter_t *cnt) {
     cnt->gen = 0;
 }
 
-/*
- * counter_add_comp - add to comparison counter.
- */
+// Adds to comparison counter.
 void counter_add_comp(counter_t *cnt, long amount) {
     if (cnt == NULL) {
         return;
@@ -32,9 +28,7 @@ void counter_add_comp(counter_t *cnt, long amount) {
     cnt->comp += amount;
 }
 
-/*
- * counter_add_io - add to I/O counter.
- */
+// Adds to I/O counter.
 void counter_add_io(counter_t *cnt, long amount) {
     if (cnt == NULL) {
         return;
@@ -42,9 +36,7 @@ void counter_add_io(counter_t *cnt, long amount) {
     cnt->io += amount;
 }
 
-/*
- * counter_add_gen - add to general counter.
- */
+// Adds to general counter.
 void counter_add_gen(counter_t *cnt, long amount) {
     if (cnt == NULL) {
         return;
@@ -52,9 +44,7 @@ void counter_add_gen(counter_t *cnt, long amount) {
     cnt->gen += amount;
 }
 
-/*
- * counter_print - prints counter values to the given stream.
- */
+// Prints counter summary.
 void counter_print(const counter_t *cnt, FILE *dest, const char *func_name,
                    int line) {
     if (cnt == NULL || dest == NULL || func_name == NULL) {

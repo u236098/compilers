@@ -23,7 +23,7 @@
 #ifndef LANG_SPEC_H
 #define LANG_SPEC_H
 
-/* ---- Token category enumeration ---- */
+// Token category enumeration.
 typedef enum {
     CAT_NUMBER       = 0,
     CAT_IDENTIFIER   = 1,
@@ -32,10 +32,10 @@ typedef enum {
     CAT_OPERATOR     = 4,
     CAT_SPECIALCHAR  = 5,
     CAT_NONRECOGNIZED = 6,
-    CAT_COUNT        = 7   /* total number of categories */
+    CAT_COUNT        = 7   // Total number of categories.
 } token_category_t;
 
-/* ---- Category name strings (indexed by token_category_t) ---- */
+// Category name strings.
 #define CAT_NAME_NUMBER        "CAT_NUMBER"
 #define CAT_NAME_IDENTIFIER    "CAT_IDENTIFIER"
 #define CAT_NAME_KEYWORD       "CAT_KEYWORD"
@@ -44,7 +44,7 @@ typedef enum {
 #define CAT_NAME_SPECIALCHAR   "CAT_SPECIALCHAR"
 #define CAT_NAME_NONRECOGNIZED "CAT_NONRECOGNIZED"
 
-/* ---- Keyword table ---- */
+// Keywords.
 #define NUM_KEYWORDS 7
 
 #define KW_IF     "if"
@@ -55,14 +55,14 @@ typedef enum {
 #define KW_CHAR   "char"
 #define KW_VOID   "void"
 
-/* ---- Operator characters ---- */
+// Operators.
 #define OP_ASSIGN '='
 #define OP_GT     '>'
 #define OP_PLUS   '+'
 #define OP_STAR   '*'
 #define NUM_OPERATORS 4
 
-/* ---- Special characters ---- */
+// Special characters.
 #define SC_LPAREN    '('
 #define SC_RPAREN    ')'
 #define SC_SEMICOLON ';'
@@ -73,66 +73,48 @@ typedef enum {
 #define SC_COMMA     ','
 #define NUM_SPECIALS 8
 
-/* ---- Literal delimiters ---- */
+// Literal delimiters.
 #define LIT_QUOTE '"'
 
-/* ---- Whitespace / delimiter characters ---- */
+// Whitespace delimiters.
 #define WS_SPACE  ' '
 #define WS_TAB    '\t'
 #define WS_CR     '\r'
 #define WS_NL     '\n'
 
-/* ---- Max lexeme length ---- */
+// Max lexeme length.
 #define MAX_LEXEME_LEN 1024
 
-/* ---- Scanner output file suffix ---- */
+// Scanner output suffix.
 #define SCN_SUFFIX "scn"
 
-/* ---- Debug count output file suffix ---- */
+// Debug count output suffix.
 #define DBGCNT_SUFFIX "dbgcnt"
 
-/* ---- Helper function declarations ---- */
+// Helper declarations.
 
-/*
- * ls_get_category_name - returns the printable name for a category.
- */
+// Returns printable category name.
 const char* ls_get_category_name(token_category_t cat);
 
-/*
- * ls_is_keyword - checks whether a lexeme is a keyword.
- * Returns 1 if it is, 0 otherwise.
- * Uses character-by-character comparison (no string library for recognition).
- */
+// Returns 1 for exact keyword matches.
 int ls_is_keyword(const char *lexeme);
 
-/*
- * ls_is_operator - checks if a character is an operator.
- */
+// Returns 1 for operators.
 int ls_is_operator(char ch);
 
-/*
- * ls_is_special_char - checks if a character is a special character.
- */
+// Returns 1 for special characters.
 int ls_is_special_char(char ch);
 
-/*
- * ls_is_whitespace - checks if a character is a whitespace/delimiter.
- */
+// Returns 1 for whitespace delimiters.
 int ls_is_whitespace(char ch);
 
-/*
- * ls_is_letter - checks if a character is a letter [A-Za-z].
- */
+// Returns 1 for letters.
 int ls_is_letter(char ch);
 
-/*
- * ls_is_digit - checks if a character is a digit [0-9].
- */
+// Returns 1 for digits.
 int ls_is_digit(char ch);
 
-/*
- * ls_is_quote - checks if a character is a literal quote delimiter.
- */
+// Returns 1 for quote delimiter.
 int ls_is_quote(char ch);
 
 #endif /* LANG_SPEC_H */

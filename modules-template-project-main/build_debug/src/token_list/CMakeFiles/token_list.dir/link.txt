@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtoken_list.a CMakeFiles/token_list.dir/token_list.c.o
+/usr/bin/ranlib libtoken_list.a

@@ -10,16 +10,18 @@
  */
 
 #include "char_stream.h"
-#include <stddef.h>  /* NULL */
+#include <stddef.h>  // NULL
 
-#define CS_FIRST_LINE 1   /* initial line number  */
-#define CS_FIRST_COL  1   /* initial column number */
-#define CS_INCREMENT  1   /* line/column increment per step */
+#define CS_FIRST_LINE 1   // Initial line number.
+#define CS_FIRST_COL  1   // Initial column number.
+#define CS_INCREMENT  1   // Per-character line/column increment.
 
-/*
- * cs_open - opens a file for reading and initialises the cursor.
- */
+// Opens the input file and initializes stream state.
 int cs_open(char_stream_t *cs, const char *filename) {
+    if (cs == NULL || filename == NULL) {
+        return -1;
+    }
+
     cs->fp = fopen(filename, "r");
     if (cs->fp == NULL) {
         return -1;
@@ -32,10 +34,12 @@ int cs_open(char_stream_t *cs, const char *filename) {
     return 0;
 }
 
-/*
- * cs_peek - returns the next character without consuming it.
- */
+// Returns next character without consuming it.
 int cs_peek(char_stream_t *cs) {
+    if (cs == NULL || cs->fp == NULL) {
+        return CS_EOF;
+    }
+
     if (cs->has_peek) {
         return cs->peek_ch;
     }
@@ -47,12 +51,14 @@ int cs_peek(char_stream_t *cs) {
     return cs->peek_ch;
 }
 
-/*
- * cs_get - reads and consumes the next character.
- * Handles newline to update line/col counters.
- */
+// Consumes next character and updates line/column tracking.
 int cs_get(char_stream_t *cs) {
     int ch;
+
+    if (cs == NULL || cs->fp == NULL) {
+        return CS_EOF;
+    }
+
     if (cs->has_peek) {
         ch = cs->peek_ch;
         cs->has_peek = 0;
@@ -75,25 +81,25 @@ int cs_get(char_stream_t *cs) {
     return ch;
 }
 
-/*
- * cs_line - returns the current line number.
- */
+// Returns current 1-based line.
 int cs_line(const char_stream_t *cs) {
+    if (cs == NULL) {
+        return CS_FIRST_LINE;
+    }
     return cs->line;
 }
 
-/*
- * cs_col - returns the current column number.
- */
+// Returns current 1-based column.
 int cs_col(const char_stream_t *cs) {
+    if (cs == NULL) {
+        return CS_FIRST_COL;
+    }
     return cs->col;
 }
 
-/*
- * cs_close - closes the file.
- */
+// Closes stream file if open.
 void cs_close(char_stream_t *cs) {
-    if (cs->fp != NULL) {
+    if (cs != NULL && cs->fp != NULL) {
         fclose(cs->fp);
         cs->fp = NULL;
     }

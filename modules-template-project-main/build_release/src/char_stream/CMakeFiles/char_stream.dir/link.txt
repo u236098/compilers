@@ -1,0 +1,2 @@
+/usr/bin/ar qc libchar_stream.a CMakeFiles/char_stream.dir/char_stream.c.o
+/usr/bin/ranlib libchar_stream.a

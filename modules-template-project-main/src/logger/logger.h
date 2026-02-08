@@ -18,35 +18,27 @@
 
 #include <stdio.h>
 
-/* ---- DEBUG configuration (compile-time) ---- */
+// DEBUG configuration (compile-time).
 #ifndef DEBUG_FLAG
-#define DEBUG_FLAG 0  /* default OFF: messages go to stdout */
+#define DEBUG_FLAG 0  // Default OFF: messages go to stdout.
 #endif
 
-/* ---- Debug ON / OFF values ---- */
+// Debug ON / OFF values.
 #define DEBUG_ON  1
 #define DEBUG_OFF 0
 
-/* Logger state: holds the destination stream */
+// Logger destination state.
 typedef struct {
-    FILE *dest;  /* current output destination (stdout or file) */
+    FILE *dest;  // Current output destination (stdout or file).
 } logger_t;
 
-/*
- * logger_init - initialise the logger.
- *   outfile: the scanner output file handle (used when DEBUG is ON).
- *   Chooses dest based on DEBUG_FLAG.
- */
+// Initializes logger destination.
 void logger_init(logger_t *lg, FILE *outfile);
 
-/*
- * logger_get_dest - returns the current destination stream.
- */
+// Returns current destination stream.
 FILE* logger_get_dest(const logger_t *lg);
 
-/*
- * logger_write - writes a formatted message to the current destination.
- */
+// Writes a formatted message.
 void logger_write(const logger_t *lg, const char *fmt, ...);
 
 #endif /* LOGGER_H */

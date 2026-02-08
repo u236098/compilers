@@ -15,17 +15,15 @@
 
 #include "../lang_spec/lang_spec.h"
 
-/* Token structure */
+// Token payload and source coordinates.
 typedef struct {
-    char lexeme[MAX_LEXEME_LEN]; /* the recognized string       */
-    token_category_t category;   /* category classification     */
-    int line;                    /* source line (1-based)       */
-    int col;                     /* source column (1-based)     */
+    char lexeme[MAX_LEXEME_LEN]; // Token lexeme string.
+    token_category_t category;   // Token category.
+    int line;                    // Source 1-based line.
+    int col;                     // Source 1-based column.
 } token_t;
 
-/*
- * token_init - initialise a token with the given lexeme, category, line, col.
- */
+// Initializes one token.
 void token_init(token_t *tok, const char *lexeme, token_category_t cat,
                 int line, int col);
 

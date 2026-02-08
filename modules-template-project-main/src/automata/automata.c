@@ -21,50 +21,44 @@
 #include "automata.h"
 #include "../lang_spec/lang_spec.h"
 
-/* ---- Transition matrix ----
- * Rows = current state, Columns = character class.
- * Value = next state.
- *
- * ST_STOP means "do not consume; emit token using last_accept_state".
- * All branching is internal to the matrix — no outer switch/if dispatch.
- */
+// Transition matrix:
+// rows = current state, columns = character class, value = next state.
+// ST_STOP means "do not consume; emit token from last_accept_state".
 
 static const scan_state_t T[ST_COUNT][CC_COUNT] = {
-    /* ST_START: branch internally based on character class */
-    /*              LETTER         DIGIT          QUOTE          OPERATOR       SPECIAL        SPACE          NEWLINE        EOF            OTHER        */
+    // ST_START: branch by first character class.
+    //           LETTER         DIGIT          QUOTE          OPERATOR       SPECIAL        SPACE          NEWLINE        EOF            OTHER
     [ST_START]    = {ST_IN_IDENT,  ST_IN_NUMBER,  ST_IN_LITERAL, ST_ACCEPT_OP,  ST_ACCEPT_SC,  ST_START,      ST_START,      ST_STOP,       ST_IN_NONREC },
 
-    /* ST_IN_NUMBER: accumulate digits, stop on anything else */
+    // ST_IN_NUMBER: accumulate digits only.
     [ST_IN_NUMBER]= {ST_STOP,      ST_IN_NUMBER,  ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_IDENT: accumulate letters/digits, stop on anything else */
+    // ST_IN_IDENT: accumulate letters/digits.
     [ST_IN_IDENT] = {ST_IN_IDENT,  ST_IN_IDENT,   ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_LITERAL: consume everything until closing quote, error on NL/EOF */
+    // ST_IN_LITERAL: accept any char except newline/EOF terminates with error.
     [ST_IN_LITERAL]={ST_IN_LITERAL,ST_IN_LITERAL,  ST_LIT_END,    ST_IN_LITERAL, ST_IN_LITERAL, ST_IN_LITERAL, ST_ERROR,      ST_ERROR,      ST_IN_LITERAL},
 
-    /* ST_ACCEPT_OP: single-char accept — immediately stop after consume */
+    // ST_ACCEPT_OP: single-character operator.
     [ST_ACCEPT_OP]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_ACCEPT_SC: single-char accept — immediately stop after consume */
+    // ST_ACCEPT_SC: single-character special token.
     [ST_ACCEPT_SC]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_IN_NONREC: accumulate consecutive non-recognized characters */
+    // ST_IN_NONREC: group consecutive non-recognized characters.
     [ST_IN_NONREC]= {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_IN_NONREC },
 
-    /* ST_LIT_END: closing quote consumed — literal done, stop immediately */
+    // ST_LIT_END: closing quote consumed.
     [ST_LIT_END]  = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_ERROR: terminal error — stop immediately */
+    // ST_ERROR: terminal failure.
     [ST_ERROR]    = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 
-    /* ST_STOP: should never be used as a current state row */
+    // ST_STOP: marker state, not an active DFA state.
     [ST_STOP]     = {ST_STOP,      ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP,       ST_STOP      },
 };
 
-/* ---- Accepting-state → token-category map ---- */
-
-/* Returns 1 if the state is an accepting state, 0 otherwise. */
+// Returns 1 when state is accepting.
 static int is_accepting(scan_state_t st) {
     switch (st) {
         case ST_IN_NUMBER:
@@ -79,11 +73,11 @@ static int is_accepting(scan_state_t st) {
     }
 }
 
-/* Maps an accepting state to its token category. */
+// Maps accepting state to token category.
 static token_category_t accept_category(scan_state_t st) {
     switch (st) {
         case ST_IN_NUMBER:  return CAT_NUMBER;
-        case ST_IN_IDENT:   return CAT_IDENTIFIER; /* reclassified later */
+        case ST_IN_IDENT:   return CAT_IDENTIFIER; // Reclassified as keyword later.
         case ST_ACCEPT_OP:  return CAT_OPERATOR;
         case ST_ACCEPT_SC:  return CAT_SPECIALCHAR;
         case ST_LIT_END:    return CAT_LITERAL;
@@ -92,9 +86,7 @@ static token_category_t accept_category(scan_state_t st) {
     }
 }
 
-/*
- * classify_char - maps a character to its character class.
- */
+// Maps one character to a DFA class.
 char_class_t classify_char(int ch) {
     if (ch == CS_EOF) {
         return CC_EOF;
@@ -123,8 +115,7 @@ char_class_t classify_char(int ch) {
     return CC_OTHER;
 }
 
-/* ---- Lexeme buffer helper ---- */
-
+// Appends one character to the token buffer with bounds check.
 static void add_char_to_lexeme(char *buf, int *len, int ch) {
     if (*len < MAX_LEXEME_LEN - 1) {
         buf[*len] = (char)ch;
@@ -133,33 +124,24 @@ static void add_char_to_lexeme(char *buf, int *len, int ch) {
     }
 }
 
-/* ---- Error reporters ---- */
-
+// Reports grouped non-recognized lexeme.
 static void report_nonrecognized(logger_t *lg, int line, const char *lexeme) {
     err_report(logger_get_dest(lg), ERR_NONRECOGNIZED, ERR_STEP_SCANNER,
                line, lexeme);
 }
 
+// Reports unterminated literal.
 static void report_unterminated_literal(logger_t *lg, int line,
                                         const char *lexeme) {
     err_report(logger_get_dest(lg), ERR_UNTERMINATED_LIT, ERR_STEP_SCANNER,
                line, lexeme);
 }
 
-/*
- * scanner_next_token - recognises ONE token using the DFA loop.
- * Returns 1 if a token was emitted, 0 if EOF was reached.
- *
- * All decisions are driven by the transition matrix T[state][class].
- * Maximal munch is implemented via last_accept_state + last_accept_pos
- * rollback (for this grammar rollback is not needed because the DFA
- * transitions to ST_STOP without consuming, but the structure is in
- * place for correctness).
- */
+// Scans one token with the DFA. Returns 1 when a token is emitted, 0 on EOF.
 static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
                               logger_t *lg, counter_t *cnt) {
     scan_state_t state = ST_START;
-    scan_state_t last_accept_state = ST_STOP; /* ST_STOP = no accept yet */
+    scan_state_t last_accept_state = ST_STOP; // ST_STOP means no accept yet.
     char buf[MAX_LEXEME_LEN];
     int buf_len = 0;
     int tok_line = cs_line(cs);
@@ -171,6 +153,23 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
     buf[0] = '\0';
 
     while (1) {
+        // Defensive check: ST_STOP should never be a current state.
+        if (state == ST_STOP) {
+            // internal error: force recovery by consuming 1 char
+            char fallback[2];
+            token_t tok;
+            int fb_line = cs_line(cs);
+            int fb_col  = cs_col(cs);
+            ch = cs_get(cs);
+            CNT_IO(cnt, 1);
+            fallback[0] = (char)ch;
+            fallback[1] = '\0';
+            report_nonrecognized(lg, fb_line, fallback);
+            token_init(&tok, fallback, CAT_NONRECOGNIZED, fb_line, fb_col);
+            tl_add(tokens, &tok);
+            return 1;  // continue scanning
+        }
+
         ch = cs_peek(cs);
         CNT_COMP(cnt, 1);
 
@@ -179,10 +178,10 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
 
         next = T[state][cls];
 
-        /* --- Handle ST_STOP or ST_ERROR --- */
+        // Handle STOP/ERROR transitions.
         if (next == ST_STOP || next == ST_ERROR) {
             if (next == ST_ERROR && state == ST_IN_LITERAL) {
-                /* Unterminated literal: report error, emit NONRECOGNIZED */
+                // Unterminated literal: exactly one error + one token.
                 report_unterminated_literal(lg, tok_line, buf);
                 {
                     token_t tok;
@@ -193,11 +192,11 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
             }
 
             if (last_accept_state != ST_STOP) {
-                /* Emit token from last accepting state */
+                // Emit token from the last accepting state.
                 token_category_t cat = accept_category(last_accept_state);
                 token_t tok;
 
-                /* Keyword reclassification: char-by-char after identifier */
+                // Reclassify accepted identifiers as keywords.
                 if (cat == CAT_IDENTIFIER && ls_is_keyword(buf)) {
                     cat = CAT_KEYWORD;
                 }
@@ -205,34 +204,45 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
                 token_init(&tok, buf, cat, tok_line, tok_col);
                 tl_add(tokens, &tok);
 
-                /* Report error for non-recognized group (one per group) */
+                // One error for one grouped non-recognized token.
                 if (cat == CAT_NONRECOGNIZED) {
                     report_nonrecognized(lg, tok_line, buf);
                 }
                 return 1;
             }
 
-            /* No accept and ST_STOP at START with EOF → done */
+            // EOF reached with no pending token.
             if (state == ST_START && cls == CC_EOF) {
                 return 0;
             }
 
-            /* Should not happen — consume one char to avoid infinite loop */
-            cs_get(cs);
-            CNT_IO(cnt, 1);
-            return 0;
+            // Defensive fallback: consume one char as NONRECOGNIZED and continue.
+            {
+                char fallback[2];
+                token_t tok;
+                tok_line = cs_line(cs);
+                tok_col  = cs_col(cs);
+                ch = cs_get(cs);
+                CNT_IO(cnt, 1);
+                fallback[0] = (char)ch;
+                fallback[1] = '\0';
+                report_nonrecognized(lg, tok_line, fallback);
+                token_init(&tok, fallback, CAT_NONRECOGNIZED, tok_line, tok_col);
+                tl_add(tokens, &tok);
+            }
+            return 1;
         }
 
-        /* --- Handle whitespace skip inside DFA (START → START) --- */
+        // Skip whitespace while staying in START.
         if (state == ST_START && next == ST_START) {
             cs_get(cs);
             CNT_IO(cnt, 1);
             continue;
         }
 
-        /* --- Normal transition: consume character --- */
+        // Normal transition: consume one character.
         if (state == ST_START) {
-            /* Record position of first character of token */
+            // Track source position of first token character.
             tok_line = cs_line(cs);
             tok_col = cs_col(cs);
         }
@@ -244,21 +254,18 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
 
         state = next;
 
-        /* Update last_accept_state if current state is accepting */
+        // Keep last accepting state for maximal munch.
         if (is_accepting(state)) {
             last_accept_state = state;
         }
     }
 }
 
-/*
- * automata_scan - main scanner entry point. Calls scanner_next_token()
- * in a loop until EOF. All decisions are inside the DFA.
- */
+// Scanner loop until EOF.
 int automata_scan(char_stream_t *cs, token_list_t *tokens, logger_t *lg,
                   counter_t *cnt) {
     while (scanner_next_token(cs, tokens, lg, cnt)) {
-        /* token emitted; continue */
+        // Continue scanning.
     }
     return 0;
 }

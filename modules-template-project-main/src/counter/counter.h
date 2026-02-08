@@ -24,14 +24,14 @@
 
 #include <stdio.h>
 
-/* ---- Counter state ---- */
+// Counter state.
 typedef struct {
-    long comp;     /* comparison counter        */
-    long io;       /* I/O character counter      */
-    long gen;      /* general instruction counter */
+    long comp;     // Comparison counter.
+    long io;       // I/O character counter.
+    long gen;      // General instruction counter.
 } counter_t;
 
-/* ---- Count output routing configuration ---- */
+// Count output routing configuration.
 #define COUNTOUT_STDOUT 0
 #define COUNTOUT_OUT    1
 
@@ -46,35 +46,23 @@ typedef struct {
 #define COUNTFILE COUNTFILE_DBGCNT
 #endif
 
-/*
- * counter_init - reset all counters to zero.
- */
+// Resets all counters to zero.
 void counter_init(counter_t *cnt);
 
-/*
- * counter_add_comp - increment comparison counter by amount.
- */
+// Increments comparison counter.
 void counter_add_comp(counter_t *cnt, long amount);
 
-/*
- * counter_add_io - increment I/O counter by amount.
- */
+// Increments I/O counter.
 void counter_add_io(counter_t *cnt, long amount);
 
-/*
- * counter_add_gen - increment general counter by amount.
- */
+// Increments general counter.
 void counter_add_gen(counter_t *cnt, long amount);
 
-/*
- * counter_print - prints current counter values to the given stream.
- *   func_name: name of the function reporting
- *   line: source line being processed
- */
+// Prints current counter summary.
 void counter_print(const counter_t *cnt, FILE *dest, const char *func_name,
                    int line);
 
-/* ---- Preprocessor macros for zero-overhead counting ---- */
+// Preprocessor macros for zero-overhead counting.
 #ifdef COUNTCONFIG
 
 #define CNT_COMP(cnt_ptr, n)  counter_add_comp((cnt_ptr), (n))
@@ -83,9 +71,9 @@ void counter_print(const counter_t *cnt, FILE *dest, const char *func_name,
 
 #else
 
-#define CNT_COMP(cnt, n)  /* no-op */
-#define CNT_IO(cnt, n)    /* no-op */
-#define CNT_GEN(cnt, n)   /* no-op */
+#define CNT_COMP(cnt, n)  // no-op
+#define CNT_IO(cnt, n)    // no-op
+#define CNT_GEN(cnt, n)   // no-op
 
 #endif /* COUNTCONFIG */
 
