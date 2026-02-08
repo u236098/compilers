@@ -1,2 +1,0 @@
-/usr/bin/ar qc libout_writer.a CMakeFiles/out_writer.dir/out_writer.c.o
-/usr/bin/ranlib libout_writer.a

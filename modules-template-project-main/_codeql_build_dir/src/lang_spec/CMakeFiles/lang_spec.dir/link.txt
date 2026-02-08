@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblang_spec.a CMakeFiles/lang_spec.dir/lang_spec.c.o
-/usr/bin/ranlib liblang_spec.a
