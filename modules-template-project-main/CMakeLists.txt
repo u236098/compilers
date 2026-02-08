@@ -52,6 +52,10 @@ message(STATUS " - (${PROJECT_NAME}) Added tests/ directory")
 # Optionally build main executable if needed 
 # This executable links together all module libraries.
 # (to have modular test for each module in parallel)
-add_executable(modules_template_main src/main.c)
-target_link_libraries(modules_template_main PRIVATE module_args module_2 utils)
-message(STATUS " - (${PROJECT_NAME}) Modules Template Main executable 'modules_template_main' linked with module_args and module_2")
+add_executable(scanner_main src/main.c)
+target_link_libraries(scanner_main PRIVATE
+    module_args module_2 utils
+    lang_spec char_stream token token_list automata out_writer
+    error_mod logger counter)
+target_include_directories(scanner_main PRIVATE ${PROJECT_SOURCE_DIR}/src)
+message(STATUS " - (${PROJECT_NAME}) Scanner executable 'scanner_main' configured")

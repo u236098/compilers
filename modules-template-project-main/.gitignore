@@ -29,3 +29,7 @@
 # Ignore OS-specific files
 .DS_Store
 Thumbs.db
+
+# Ignore scanner output files
+*.cscn
+*.dbgcnt

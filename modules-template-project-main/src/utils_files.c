@@ -63,9 +63,13 @@ FILE* set_output_test_file(const char* filename) {
         // (i.e. fake it as GMT-3 if Madrid is in GMT+2 summer time)
         // When run in github actions the server is in another time zone
         // We want timestamp related to our time
+#ifdef _WIN32
         _putenv("TZ=GMT-2");
-        //_putenv("TZ=Europe/Madrid");
         _tzset();
+#else
+        putenv("TZ=GMT-2");
+        tzset();
+#endif
         generate_timestamped_log_filename(filename, timestamped_filename, sizeof(timestamped_filename));
         filename = timestamped_filename;
 
