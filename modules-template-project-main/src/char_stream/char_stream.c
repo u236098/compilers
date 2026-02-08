@@ -14,7 +14,7 @@
 
 #define CS_FIRST_LINE 1   /* initial line number  */
 #define CS_FIRST_COL  1   /* initial column number */
-#define CS_COL_INC    1   /* column increment per character */
+#define CS_INCREMENT  1   /* line/column increment per step */
 
 /*
  * cs_open - opens a file for reading and initialises the cursor.
@@ -66,10 +66,10 @@ int cs_get(char_stream_t *cs) {
     if (ch != CS_EOF) {
         cs->current = ch;
         if (ch == '\n') {
-            cs->line += CS_COL_INC;
+            cs->line += CS_INCREMENT;
             cs->col = CS_FIRST_COL;
         } else {
-            cs->col += CS_COL_INC;
+            cs->col += CS_INCREMENT;
         }
     }
     return ch;

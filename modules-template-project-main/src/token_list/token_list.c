@@ -10,6 +10,7 @@
 
 #include "token_list.h"
 #include <stdlib.h>  /* malloc, realloc, free */
+#include <stdio.h>   /* fprintf, stderr */
 #include <stddef.h>  /* NULL */
 
 /*
@@ -17,17 +18,29 @@
  */
 void tl_init(token_list_t *list) {
     list->tokens = (token_t *)malloc(TL_INIT_CAPACITY * sizeof(token_t));
+    if (list->tokens == NULL) {
+        fprintf(stderr, "tl_init: memory allocation failed\n");
+        list->capacity = 0;
+    } else {
+        list->capacity = TL_INIT_CAPACITY;
+    }
     list->count = 0;
-    list->capacity = TL_INIT_CAPACITY;
 }
 
 /*
  * tl_grow - doubles the capacity of the token list when needed.
+ * Returns 0 on success, -1 on allocation failure.
  */
-static void tl_grow(token_list_t *list) {
+static int tl_grow(token_list_t *list) {
     int new_cap = list->capacity * TL_GROWTH_FACTOR;
-    list->tokens = (token_t *)realloc(list->tokens, new_cap * sizeof(token_t));
+    token_t *new_buf = (token_t *)realloc(list->tokens, new_cap * sizeof(token_t));
+    if (new_buf == NULL) {
+        fprintf(stderr, "tl_grow: memory reallocation failed\n");
+        return -1;
+    }
+    list->tokens = new_buf;
     list->capacity = new_cap;
+    return 0;
 }
 
 /*
@@ -35,7 +48,9 @@ static void tl_grow(token_list_t *list) {
  */
 void tl_add(token_list_t *list, const token_t *tok) {
     if (list->count >= list->capacity) {
-        tl_grow(list);
+        if (tl_grow(list) != 0) {
+            return; /* allocation failed; skip adding */
+        }
     }
     list->tokens[list->count] = *tok;
     list->count++;
