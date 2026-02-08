@@ -1,0 +1,138 @@
+Language Specification – Automata Design (Final Version)
+The scanner is implemented as a single-pass automata-based lexical analyzer.
+ Each token category is defined by a regular expression and recognized by a deterministic finite automaton (DFA).
+ The scanner uses lookahead to decide when to stop an automaton (maximal munch), without consuming characters that belong to the next token.
+General Automaton Definition
+An automaton is defined as:
+Automata = (Σ, S, S₀, δ, F)
+Where:
+Σ is the input alphabet (or relevant character classes)
+S is the set of states
+S₀ is the initial state
+δ is the transition function
+F is the set of accepting states
+Lookahead Rule
+The scanner uses a lookahead function to inspect the next character without consuming it.
+ If no valid transition exists for the next character, the automaton stops:
+if the current state is accepting → the token is accepted
+
+
+otherwise → the token is rejected
+The lookahead character is not consumed and is reused for the next token.
+NUMBER Automaton
+Regular Expression:
+[0-9]+
+Σ: {0,1,2,3,4,5,6,7,8,9}
+ S: {S0, S1}
+ S₀: S0
+ F: {S1}
+δ:
+δ(S0, digit) = S1
+δ(S1, digit) = S1
+Stop Condition:
+ When the next character is not a digit.
+Special Notes:
+At least one digit is required for acceptance.
+If the first character is not a digit, this automaton is not selected.
+IDENTIFIER Automaton
+Regular Expression:
+LETTER (LETTER | DIGIT)*
+Concrete form:
+[A-Za-z][A-Za-z0-9]*
+Σ: {LETTER, DIGIT}
+ S: {S0, S1}
+ S₀: S0
+ F: {S1}
+δ:
+δ(S0, LETTER) = S1
+δ(S1, LETTER or DIGIT) = S1
+Stop Condition:
+ When the next character is not a letter or digit.
+Special Notes:
+Guarantees maximal munch.
+Identifiers must start with a letter.
+KEYWORD Handling (Post-Processing Rule)
+Keywords:
+if, else, while, return
+Rule:
+Run the IDENTIFIER automaton and obtain lexeme L
+If L matches exactly one of the reserved keywords → token category = KEYWORD
+Otherwise → token category = IDENTIFIER
+Important:
+ Keyword recognition is not implemented as a separate automaton, because keywords follow the identifier pattern.
+
+LITERAL Automaton
+Regular Expression:
+"[^"]*"
+Σ: { " } ∪ OTHER
+ (OTHER = any character except " and newline)
+S: {S0, S1, S2, Serr}
+ S₀: S0
+ F: {S2}
+δ:
+δ(S0, ") = S1
+δ(S1, OTHER) = S1
+δ(S1, ") = S2
+δ(S1, newline or EOF) = Serr
+Special Notes:
+Accepts only if a closing quote is found.
+If Serr is reached, an unterminated literal error is reported.
+
+OPERATOR Automaton
+Regular Expression:
+= | > | + | *
+Σ: { =, >, +, * }
+ S: {S0, S1}
+ S₀: S0
+ F: {S1}
+δ:
+δ(S0, operator) = S1
+Special Notes:
+Operators are single-character tokens.
+Exactly one character is consumed.
+SPECIAL CHARACTER Automaton
+Regular Expression:
+[(){}[\],;]
+Σ: { (, ), ;, {, }, [, ], , }
+ S: {S0, S1}
+ S₀: S0
+ F: {S1}
+δ:
+δ(S0, special_char) = S1
+Special Notes:
+Special characters are always single-character tokens.
+No ambiguity or lookahead beyond the first character is required.
+
+
+
+
+NON-RECOGNIZED Handling
+A character is non-recognized if it does not start any valid token:
+not a digit
+not a letter
+not "
+not an operator (= > + *)
+not a special character
+not whitespace
+not EOF
+Conceptual Regular Expression:
+(ANY_CHAR − VALID_TOKEN_START)+
+States: {S0, S1}
+ S₀: S0
+ F: {S1}
+δ:
+δ(S0, non-recognized) = S1
+δ(S1, non-recognized) = S1
+Stop Condition:
+ When lookahead is whitespace, EOF, or a valid token start.
+Action on Acceptance:
+Group the entire invalid substring into one lexeme
+Emit one error message
+Produce one NON-RECOGNIZED token
+Continue scanning from the next valid character
+Final Notes
+The scanner operates in one pass
+Only one automaton runs at a time
+Maximal munch is always respected
+Errors never cause infinite loops
+The design fully complies with the COMP_P2 practice handout
