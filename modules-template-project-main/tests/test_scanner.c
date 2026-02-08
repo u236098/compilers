@@ -451,6 +451,10 @@ static void test_output_filenames_extended(void) {
     ow_build_output_filename("simple.c", buf, 256);
     assert(strcmp(buf, "simple.cscn") == 0);
 
+    /* example.c -> example.cdbgcnt */
+    ow_build_count_filename("example.c", buf, 256);
+    assert(strcmp(buf, "example.cdbgcnt") == 0);
+
     printf("  output filenames (extended) tests PASSED\n");
 }
 
@@ -487,6 +491,36 @@ static void test_countio(void) {
     printf("  COUNTIO tests PASSED\n");
 }
 
+/* ---- Test: NULL counter pointer safety ---- */
+
+/*
+ * test_null_counter_pointer - verifies scanning works when counter pointer
+ * is NULL (COUNT macros must be NULL-safe).
+ */
+static void test_null_counter_pointer(void) {
+    char_stream_t cs;
+    token_list_t tokens;
+    logger_t lg;
+    int result;
+
+    printf("  Testing NULL counter pointer safety...\n");
+
+    write_test_file();
+    tl_init(&tokens);
+    logger_init(&lg, stdout);
+
+    result = cs_open(&cs, TEST_INPUT_FILE);
+    assert(result == 0);
+    result = automata_scan(&cs, &tokens, &lg, NULL);
+    assert(result == 0);
+    cs_close(&cs);
+
+    assert(tl_count(&tokens) == TEST_BASIC_EXPECTED_TOKENS);
+    tl_free(&tokens);
+
+    printf("  NULL counter pointer tests PASSED\n");
+}
+
 /* ---- Main ---- */
 
 int main(void) {
@@ -502,6 +536,7 @@ int main(void) {
     test_grouped_nonrecognized();
     test_output_filenames_extended();
     test_countio();
+    test_null_counter_pointer();
 
     printf("All scanner tests PASSED!\n");
     return 0;

@@ -49,11 +49,29 @@ void ow_build_output_filename(const char *input_filename, char *output_buf,
                               int buf_len);
 
 /*
+ * ow_build_count_filename - constructs the debug count filename by appending
+ * DBGCNT_SUFFIX to the input filename's extension.
+ *   input_filename: e.g. "example.c"
+ *   output_buf:     buffer to write result e.g. "example.cdbgcnt"
+ *   buf_len:        size of output_buf
+ */
+void ow_build_count_filename(const char *input_filename, char *output_buf,
+                             int buf_len);
+
+/*
  * ow_write_token_file - writes the token list to the output .cscn file.
  *   tokens: the token list to write
  *   output_filename: path to the output file
  * Returns 0 on success, non-zero on error.
  */
 int ow_write_token_file(const token_list_t *tokens, const char *output_filename);
+
+/*
+ * ow_write_token_file_mode - same as ow_write_token_file with explicit
+ * file mode control.
+ *   append_mode: 0 => overwrite file ("w"), non-zero => append ("a")
+ */
+int ow_write_token_file_mode(const token_list_t *tokens,
+                             const char *output_filename, int append_mode);
 
 #endif /* OUT_WRITER_H */

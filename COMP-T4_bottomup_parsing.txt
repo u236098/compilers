@@ -1,0 +1,507 @@
+
+--- Page 1 ---
+COMP  - 1.- Compilers Bottom-up Parsing 
+Bottom-up 
+Parsing 
+Dolors Sala 
+(Original slides by Yannis Smaragdakis, Univ Athens , Lecture 5) 
+--- Page 2 ---
+COMP  - 2.- Compilers Bottom-up Parsing 
+Bottom-up Parsing 
+•More general than top-down parsing 
+–And as efficient 
+–Builds on the ideas in top-down parsing 
+•Specific algorithm: LR parsing 
+–L means that (input) tokens are read left to right 
+–R means that it constructs a rightmost derivation 
+–Donald Knuth (1965), “ On the translation of 
+languages from Left to Right ”
+--- Page 3 ---
+COMP  - 3.- Compilers Bottom-up Parsing 
+A Bottom-up Example 
+•Start with input stream 
+–Leaves of parse tree 
+•Build up towards goal symbol 
+–Called reducing 
+–Construct the reverse derivation Production Rules 
+1. G aABe
+2. A Ab c
+3. | b
+4. Bd
+Rule Sentential form 
+- abbcde 
+AA
+BG
+a cb d b e3           a Abcde 
+2 a Ade 
+4           aA Be
+1 Gabbcde 
+aAbc de 
+aA de
+aABe 
+--- Page 4 ---
+COMP  - 4.- Compilers Bottom-up Parsing 
+The Idea 
+•An LR parser reduces a string to the start symbol 
+by inverting productions: 
+str input string of terminals 
+repeat 
+•Identify βin str such that Aβis a production 
+(i.e., str = αβγ )
+•Replace βby A in str 
+(i.e., str becomes αAγ )
+until str = G
+•LR parsers: 
+–They can handle left-recursions 
+–They don’t need left factoring 
+--- Page 5 ---
+COMP  - 5.- Compilers Bottom-up Parsing 
+It seems Simple 
+•How to choose the correct reduction? 
+–It is not as simple as find a reduction in the righ t-hand 
+side and apply it 
+•Example: input abbcde 
+•aAAcde is not part of any valid sentential form Rule Sentential form 
+- a bbcde 
+3           aA bcde 
+3           aA Acde 
+?           What reduction? Production Rules 
+1. G aABe
+2. A Ab c
+3. | b
+4. Bd
+--- Page 6 ---
+COMP  - 6.- Compilers Bottom-up Parsing 
+Key Concepts 
+•How do we make it work? 
+–How do we know we do not get blocked? 
+–How do we decide the next reduction? 
+–How do we find it efficiently? 
+•Key 
+–We are constructing the right-most derivation 
+–Grammar is unambiguous 
+•Unique right-most derivation for every string 
+•Unique production applied at each forward step 
+•Unique correct reduction at each backward step 
+--- Page 7 ---
+COMP  - 7.- Compilers Bottom-up Parsing 
+LR Parsing: Stack with 2 Operations 
+•State of the parser: 
+α |γ
+–α is a stack of terminals and non-terminals 
+–γ is string of unexamined terminals 
+–|the current input reading position 
+•Two operations 
+–Shift : read next terminal, push on the stack 
+E + ( |int )       E + ( int |) 
+–Reduce : pop RHS symbols off stack, push LHS 
+E + ( E + ( E ) |)       E + ( E|) Production Rules 
+1. E E + ( E ) 
+2. | int 
+--- Page 8 ---
+COMP  - 8.- Compilers Bottom-up Parsing 
+Example 
+1. |int + ( int ) + ( int ) Nothing on stack, get next tok en 
+2. int |+ ( int ) + ( int )  Shift: push int 
+3. int |+ ( int ) + ( int )  Reduce: pop int, push E 
+4. int + |( int ) + ( int )  Shift: push + 
+5. int + ( |int ) + ( int )  Shift: push ( 
+6. int + ( int |) + ( int )  Shift: push int 
+7. int + ( int |) + ( int )  Reduce: pop int, push E 
+8. int + ( int ) |+ ( int )  Shift: push ) 
+9. int + ( int ) |+ ( int ) Reduce: pop x5 E + ( E ), push E 
+10. int + ( int ) + |( int ) Shift: push + 
+11. int + ( int ) + ( |int ) Shift: push ( 
+12. int + ( int ) + ( int |) Shift: push int 
+13. int + ( int ) + ( int |) Reduce: pop int, push E 
+14. int + ( int ) + ( int ) | Shift: push ) 
+15. int + ( int ) + ( int ) |Reduce: pop x5 E + ( E ), push E 
+Finished Production Rules 
+1. E E + ( E ) 
+2. | int 
+int E+
+E(
+stack int E)
+E)
+Eint 
+(
++
+--- Page 9 ---
+COMP  - 9.- Compilers Bottom-up Parsing 
+Why does it work? 
+•Right-most derivation 
+G γ1γ2γ3γ4γ5input 
+•Going backwards, start at the input and last step 
+•To reverse this step: 
+–Read input until rhs (q r s) are on top of the stack 
+–Reduce rhs (q r s) to lhs (B) abc qrs xyz abc Bxyz Production: 
+B q r s
+input γ5
+G
+--- Page 10 ---
+COMP  - 10.- Compilers Bottom-up Parsing 
+Right-most Derivation 
+•Could it be an alternative reduction? 
+•If it exists one such 
+•If it exists it means there are 2 right-most deriva tions for 
+the same string 
+–This would mean that the grammar is ambiguous 
+•Therefore, it cannot be an alternative reduction abcq rsxyz aDrsxyz Production: D b c q
+input γ5
+Gabc qrs xyz abc Bxyz Production: B q r s
+input γ5
+G
+--- Page 11 ---
+COMP  - 11.- Compilers Bottom-up Parsing 
+LR Parsing 
+repeat 
+if top symbols on stack match βfor some A β
+Reduce : “found an A”
+Pop those βsymbols off 
+Push Aon stack 
+else Get next token from scanner 
+if token is useful 
+Shift “still working on something” 
+Push on stack 
+else error - stop 
+until stack contains goal and no more input 
+--- Page 12 ---
+COMP  - 12.- Compilers Bottom-up Parsing 
+Key Problems 
+How do we know when to shift or reduce? 
+•Shifts 
+–Default behavior: shift when there is no reduction 
+–Still need to handle errors 
+•Reductions 
+–At any given step, reduction is unique 
+–Matching production occurs at top of stack 
+–Problem: How to efficiently find the production to apply 
+--- Page 13 ---
+COMP  - 13.- Compilers Bottom-up Parsing 
+Identifying Reductions 
+•Cases 
+•Parsing state: 
+–Input: a b c q r s |x y z
+–Stack: a b c B
+•What is on the stack? 
+–Sequence of terminals and non-terminals 
+–All applicable reductions, except the last, already  
+applied 
+–Called a viable prefix Productions: B q r s
+F c B x
+ab cBx yz γ5
+ab Fyz γ4
+abc qrs xyz 
+--- Page 14 ---
+COMP  - 14.- Compilers Bottom-up Parsing 
+Viable Prefixes: Properties 
+•Viable prefixes are a regular language 
+–They can be implemented with an automata 
+•Automata to identify viable prefixes 
+–Input: stack contents (mix terminals & non-terminal s) 
+–Each state represents either 
+•A right sentential form labeled with the reduction to apply 
+•A viable prefix labeled with tokens to expect next 
+--- Page 15 ---
+COMP  - 15.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA 
+•Using the DFA 
+–At each parsing step run the DFA on stack contents 
+–Examine the resulting state Xand the token t
+immediately following |in the input stream 
+•If Xhas an outgoing edge labeled tthen shift 
+•If Xis labeled “A β on t” then reduce 
+•Example: Production Rules 
+1. E E + ( E ) 
+2. | int 
+--- Page 16 ---
+COMP  - 16.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Example (1) 
+Production Rules 
+1. E E + ( E ) 
+2. | int 
+(Later we see how to derive he automata) State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+--- Page 17 ---
+COMP  - 17.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Example (2) 
+Production Rules 
+1. E E + ( E ) 
+2. | int 
+State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+--- Page 18 ---
+COMP  - 18.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Example (3) 
+Production Rules 
+1. E E + ( E ) 
+2. | int State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+2 int | +(int) + (int)$ E reduce R2 
+--- Page 19 ---
+COMP  - 19.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Example (4) 
+Production Rules 
+1. E E + ( E ) 
+2. | int 
+State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+2 int | +(int) + (int)$ E reduce R2 
+3 int +| (int) + (int)$ E + shift 
+4 int + ( | int) + (int)$ E + ( shift 
+5 int + ( int | ) + (int)$ E + ( int shift 
+--- Page 20 ---
+COMP  - 20.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Example (4) 
+Production Rules 
+1. E E + ( E ) 
+2. | int 
+State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+2 int | +(int) + (int)$ E reduce R2 
+3 int +| (int) + (int)$ E + shift 
+4 int + ( | int) + (int)$ E + ( shift 
+5 int + ( int | ) + (int)$ E + ( int shift 
+6 int + (int | )+ (int)$ E + ( E R2 
+7 int + (int )| + (int)$ E + ( E ) shift 
+2 int + (int) | +(int)$ E R1 
+--- Page 21 ---
+COMP  - 21.- Compilers Bottom-up Parsing 
+Product.Rules 1 E E + ( E ) 
+2         | int Shift/Reduce DFA: Example (4) 
+State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+2 int | + (int) + (int)$ E reduce R2 
+3 int +| (int) + (int)$ E + shift 
+4 int + ( | int) + (int)$ E + ( shift 
+5 int + ( int | ) + (int)$ E + ( int shift 
+6 int + (int | )+ (int)$ E + ( E R2 
+7 int + (int )| + (int)$ E + ( E ) shift 
+2 int + (int) | +(int)$ E R1 
+3 int + (int) +| (int)$ E + shift 
+4 int + (int) + (| int)$ E + ( shift 
+5 int + (int) + ( int | )$ E + ( int shift 
+6 int + (int) + (int | )$ E + ( E R2 
+7 int + (int) + (int )| $ E + ( E ) shift 
+2 int + (int) + (int ) | $E R1 / accept 
+--- Page 22 ---
+COMP  - 22.- Compilers Bottom-up Parsing 
+Shift/Reduce DFA: Merge shift - reduce 
+Production Rules 
+1. E E + ( E ) 
+2. | int State Input Stack Opera tions 
+0 | int + (int) + (int)$ 
+1 int | + (int) + (int)$ int shift 
+2 int | +(int) + (int)$ E reduce R2 
+2 int | +(int) + (int)$ E shift/R2 
+--- Page 23 ---
+COMP  - 23.- Compilers Bottom-up Parsing 
+Operations 
+•Each DFA state represents stack contents 
+–At each step, we run the DFA to compute the new state 
+–Two actions: 
+•Shift : Push a new token 
+•Reduce : Pop some symbols off, push a new symbol 
+•The DFA state can be stored in the stack 
+–For each symbol on the stack, remember the DFA state that represents the contents up to the that p oint 
+–Push a new token = go forward in the DFA 
+–Pop a sequence of symbols = “ unwind ” to previous 
+state in the DFA (stored in the stack) 
+--- Page 24 ---
+COMP  - 24.- Compilers Bottom-up Parsing 
+Representing the shift / reduce DFA 
+•Combined table: not only the next state, but also t he stack 
+operations 
+–Columns of table: 
+•action for input symbols (terminal symbols) 
+•goto for stack information (non-terminal symbols, ap plies reduction) 
+s8                      s7 
+--- Page 25 ---
+COMP  - 25.- Compilers Bottom-up Parsing 
+action(state, token) goto 
+State int + ( ) $ E0 1 g2 1 rEint 
+0rEint 
+0
+2 3 accept 3 44 5 g6 5 rEint 
+4rEint 
+4
+6 8 77 rEE+(E) 
+0rEE+(E) 
+0
+8 99 5 g10 10 8 11 11 rEE+(E) 
+4rEE+(E) 
+4
+Production Rules 1 E E + ( E ) 
+2         | int 
+--- Page 26 ---
+COMP  - 26.- Compilers Bottom-up Parsing 
+How is the DFA constructed? 
+•What is on the stack? 
+–Viable prefix – A piece of a sentential form E + ( E + ( int E + ( E + ( 
+•Idea: we are part-way through some production 
+•Problem: productions can share pieces 
+•DFA state represent the set of candidate production s 
+–Represents all the productions we could be working on 
+–Notation: LR(1) item shows where we are and what we need to 
+see 
+--- Page 27 ---
+COMP  - 27.- Compilers Bottom-up Parsing 
+Definition: LR Items 
+•An LR(1) item is a pair: 
+[A α●β, a]
+•A αβ is a production 
+•a is a terminal (the lookahead terminal )
+•LR(1) means 1 lookahead terminal 
+•[A α●β, a] describes a context of the parser 
+–We are trying to find an A followed by an a, and 
+–We have seen an α 
+–We need to see a string derived from β a
+--- Page 28 ---
+COMP  - 28.- Compilers Bottom-up Parsing 
+LR Items 
+•In context containing (position in the middle of ru le) 
+[E E + ●( E ), +] 
+–If “ (“ is next then we can shift to context containing 
+[E E + ( ●E ), +] 
+•In the context containing (position at the end of r ule) 
+[E E + (E ) ●, +] 
+–We can reduce with the E E + ( E ) 
+–But only if a “ +” follows 
+--- Page 29 ---
+COMP  - 29.- Compilers Bottom-up Parsing 
+LR Items 
+•Consider the item 
+E E + ( ●E ), + 
+we expect a string derived from E ) + 
+There are 2 productions for E
+E int and E E + (E) 
+•We extend the context with two more items: 
+E ●int, )
+E ●E + ( E ) , ) 
+•Each DFA state: 
+–The set of items that represent all possible produc tions 
+we could be working on – called the closure of the set 
+of items 
+--- Page 30 ---
+COMP  - 30.- Compilers Bottom-up Parsing 
+Closure Example 
+•Starting context = closure ({ S●E,$ }) 
+•Abbreviated 1. S ●E, $ 
+2. E ●E+(E), $ 
+3. E ●int, $ 
+4. E ●E+(E), + 
+5. E ●int, + 
+1. S ●E, $ 
+2. E ●E+(E), $/+ 
+3. E ●int, $/+ 
+--- Page 31 ---
+COMP  - 31.- Compilers Bottom-up Parsing 
+Example 
+1. S ●E, $ 
+2. E ●E+(E), $/+ 
+3. E ●int, $/+ Production Rules 
+1. E E + ( E ) 
+2. | int 
+--- Page 32 ---
+COMP  - 32.- Compilers Bottom-up Parsing 
+Production Rules 
+1. E E + ( E ) 
+2. | int 
+int S●E, $ 
+E●E+(E), $/+ 
+E●int, $/+ 0
+Eint ●, $/+ Eint on $, + 1
+E
++EE+ ●(E), $/+ 3
+(EE+( ●E), $/+ 
+E●E+(E), )/+ 
+E●int, )/+ 4
+SE●, $ 
+EE●+(E), $/+ 2
+Accept on $Eint ●, )/+ Eint on ), + 5
+int 
+EE+(E ●), $/+ 
+EE●+(E), )/+ 6
+)E
++
+EE+( ●E), )/+ 
+E●E+(E), )/+ 
+E●int, )/+ 9
+(
+E
+)
+EE+(E) ●, )/+ 11 
+EE+(E) on ), + EE+(E) ●, $/+ 
+EE+(E) on $, + 7
+EE+(E ●), )/+ 
+EE●+(E), )/+ 10 int 
++EE+ ●(E), )/+ 8Example (Full DFA) 
+
+--- Page 33 ---
+COMP  - 33.- Compilers Bottom-up Parsing 
+Closure Operation 
+•Observation 
+–At A α ●Bβ we expect to see Bβ next 
+–Means if B γ is a production, then we could see a γ
+•Algorithm 
+1. closure( Items ) = 
+2. repeat 
+3. for each [A +α ●Bβ , a] in Items 
+4. for each production B γ
+5. for each b∈FIRST (βa)
+6. add [B●γ, b] to Items 
+7. until Items is unchanged 
+--- Page 34 ---
+COMP  - 34.- Compilers Bottom-up Parsing 
+action(state, token) goto 
+State int + ( ) $ E0 1 g2 1 rEint 
+0rEint 
+0
+2 3 accept 3 44 5 g6 5 rEint 
+4rEint 
+4
+6 8 77 rEE+(E) 
+0rEE+(E) 
+0
+8 99 5 g10 10 8 11 11 rEE+(E) 
+4rEE+(E) 
+4
+--- Page 35 ---
+COMP  - 35.- Compilers Bottom-up Parsing 
+LR Parsing 
+
+--- Page 36 ---
+COMP  - 36.- Compilers Bottom-up Parsing 
+Issues with LR parsers 
+•What happens if a state contains 
+[A α●aβ, b] and [Y γ●, a]
+•Then on input “a” we could either 
+–Shift into state [A α●aβ, b] or 
+–Reduce with Yγ
+•This is called a shift-reduce conflict 
+–Typically due to ambiguity 
+•There are many more issues to consider 
+•Not covered in this course 
+--- Page 37 ---
+COMP  - 37.- Compilers Bottom-up Parsing 
+Summary of Parsing (Bottom-up) 
+•A more powerful parser: LR(1) (bottom-up parser) 
+•It starts from the input and replaces right-hand fo r the 
+left-hand side of the production rules (bottom-up) 
+•It supports left-recursion 
+•It uses a DFA that defines the next state and actio n table 
+and keeps track of the advance with an stack 
+•Shift-reduced automata Actions: 
+–Reduce : match of production rule, pop all rhs symbols and 
+push lhs 
+–Shift : advance input and push symbol to stack 
+–Accept : when original symbol and input all processed 
+–Error: otherwise 
+•Items define the context of the parser 
+•Closure of a set of items define the possible production 
+rules to apply 

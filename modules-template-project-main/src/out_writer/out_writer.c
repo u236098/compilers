@@ -41,6 +41,29 @@ void ow_build_output_filename(const char *input_filename, char *output_buf,
 }
 
 /*
+ * ow_build_count_filename - appends DBGCNT_SUFFIX to the input extension.
+ * Example: "example.c" -> "example.cdbgcnt"
+ */
+void ow_build_count_filename(const char *input_filename, char *output_buf,
+                             int buf_len) {
+    int i = 0;
+    while (input_filename[i] != '\0' && i < buf_len - 1) {
+        output_buf[i] = input_filename[i];
+        i++;
+    }
+    {
+        const char *suffix = DBGCNT_SUFFIX;
+        int s = 0;
+        while (suffix[s] != '\0' && i < buf_len - 1) {
+            output_buf[i] = suffix[s];
+            i++;
+            s++;
+        }
+    }
+    output_buf[i] = '\0';
+}
+
+/*
  * write_token_formatted - writes a single token in <lexeme, CATEGORY> format.
  */
 static void write_token_formatted(FILE *fp, const token_t *tok) {
@@ -52,15 +75,17 @@ static void write_token_formatted(FILE *fp, const token_t *tok) {
 /*
  * ow_write_token_file - writes the complete token list.
  */
-int ow_write_token_file(const token_list_t *tokens, const char *output_filename) {
+int ow_write_token_file_mode(const token_list_t *tokens,
+                             const char *output_filename, int append_mode) {
     FILE *fp;
     int i;
     int count;
     int current_line;
     int first_on_line;
     const token_t *tok;
+    const char *open_mode = append_mode ? "a" : "w";
 
-    fp = fopen(output_filename, "w");
+    fp = fopen(output_filename, open_mode);
     if (fp == NULL) {
         return -1;
     }
@@ -105,9 +130,16 @@ int ow_write_token_file(const token_list_t *tokens, const char *output_filename)
         first_on_line = 0;
     }
 
-    /* Final newline */
+    /* Final newline (+ DEBUG separator blank line). */
     fprintf(fp, "\n");
+#if OUTFORMAT == OUTFORMAT_DEBUG
+    fprintf(fp, "\n");
+#endif
 
     fclose(fp);
     return 0;
+}
+
+int ow_write_token_file(const token_list_t *tokens, const char *output_filename) {
+    return ow_write_token_file_mode(tokens, output_filename, 0);
 }

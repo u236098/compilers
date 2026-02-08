@@ -14,6 +14,9 @@
  * counter_init - zeros all counters.
  */
 void counter_init(counter_t *cnt) {
+    if (cnt == NULL) {
+        return;
+    }
     cnt->comp = 0;
     cnt->io = 0;
     cnt->gen = 0;
@@ -23,6 +26,9 @@ void counter_init(counter_t *cnt) {
  * counter_add_comp - add to comparison counter.
  */
 void counter_add_comp(counter_t *cnt, long amount) {
+    if (cnt == NULL) {
+        return;
+    }
     cnt->comp += amount;
 }
 
@@ -30,6 +36,9 @@ void counter_add_comp(counter_t *cnt, long amount) {
  * counter_add_io - add to I/O counter.
  */
 void counter_add_io(counter_t *cnt, long amount) {
+    if (cnt == NULL) {
+        return;
+    }
     cnt->io += amount;
 }
 
@@ -37,6 +46,9 @@ void counter_add_io(counter_t *cnt, long amount) {
  * counter_add_gen - add to general counter.
  */
 void counter_add_gen(counter_t *cnt, long amount) {
+    if (cnt == NULL) {
+        return;
+    }
     cnt->gen += amount;
 }
 
@@ -45,6 +57,9 @@ void counter_add_gen(counter_t *cnt, long amount) {
  */
 void counter_print(const counter_t *cnt, FILE *dest, const char *func_name,
                    int line) {
+    if (cnt == NULL || dest == NULL || func_name == NULL) {
+        return;
+    }
     fprintf(dest, "[COUNTER] Line %d | Func: %s | COMP=%ld IO=%ld GEN=%ld\n",
             line, func_name, cnt->comp, cnt->io, cnt->gen);
 }

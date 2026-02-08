@@ -1,0 +1,2 @@
+/usr/bin/ar qc liberror_mod.a CMakeFiles/error_mod.dir/error_mod.c.o
+/usr/bin/ranlib liberror_mod.a

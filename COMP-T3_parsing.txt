@@ -1,0 +1,961 @@
+
+--- Page 1 ---
+COMP  - 1.- Compilers Parsing 
+Parsing 
+Dolors Sala 
+--- Page 2 ---
+COMP  - 2.- Compilers Parsing 
+Bibliography •
+Henri Casanova, Machine learning and systems progra mming ICS312 (Module 9 
+Compiling), University of Hawaii (Parsing Lecture) 
+•Yannis Smaragdakis, Compilers K31, University of Ath ens, (Lecture 4 Top-
+down Parsers) 
+--- Page 3 ---
+COMP  - 3.- Compilers Parsing 
+Syntactic Analysis 
+•Lexical analysis is about ensuring that we extract a set of valid words (i.e. tokens/lexemes) from the  
+source code 
+•But nothing says that the words make a coherent sentence (i.e. program) 
+•Example: 
+–“while A smaller than 3  A + 1 = B” 
+–Lexer produces: <TOKEN_WHILE> <TOKEN_NAME A> 
+<TOKEN_NAME smaller> <TOKEN_NAME than> <TOKEN_INTEG ER 
+3> <TOKEN_NAME A> <TOKEN_PLUS> <TOKEN_INTEGER 1> <TOKEN_EQUAL> <TOKEN_NAME B> 
+–This line of code is lexically correct but syntacti cally 
+incorrect 
+--- Page 4 ---
+COMP  - 4.- Compilers Parsing 
+Parsing 
+•Parsing organizes tokens into sentences 
+•Important to indicate the errors when there is no match 
+
+--- Page 5 ---
+COMP  - 5.- Compilers Parsing 
+Grammar 
+•How do we know a sentence is syntactically correct? 
+•Check it against a grammar 
+•A grammar consists of a set of rules that determine which sentences are correct 
+•Example 
+–In English: A sentence must have a verb 
+–In C: an “if” goes together with an “else” 
+•Given a grammar, we can derive sentences by 
+repeated substitution 
+•Parsing is the reverse process , given a sentence, 
+find a derivation 
+--- Page 6 ---
+COMP  - 6.- Compilers Parsing 
+Specifying Programming Languages 
+•Regular expressions is a way we have seen for specifying a set of rules 
+•But they are not enough to describe the syntax of 
+programming languages 
+•Example: If we have 3 “{“ the code has to have 3 “}” 
+–It cannot be expressed in a regular expression 
+–Regular expressions cannot count and remembering counts 
+•We need the Context-Free Grammars (CFG) 
+--- Page 7 ---
+COMP  - 7.- Compilers Parsing 
+Context Free Grammars (CFG) 
+•A context free grammar (CFG) is a set of rules, called 
+production rules 
+•Each rule describes how a non-terminal symbol 
+can be replaced or expanded by a string that consists of non-terminal and 
+terminal symbols 
+–Terminal symbols are tokens (from lexer)
+–Rules are written with a syntax like regular expressions 
+•Rules can be applied recursively 
+•Eventually it reaches to an string of only terminal  
+symbols  this sentence is syntactically correct 
+--- Page 8 ---
+COMP  - 8.- Compilers Parsing 
+CFG Specification 
+•A context free grammar (CFG) is specified with 
+–A set of terminal symbols 
+–A set of non-terminal symbols 
+–A start symbol (S) 
+–A set of production rules 
+--- Page 9 ---
+COMP  - 9.- Compilers Parsing 
+CFG Example 
+•Set of non-terminals : A, B, C (uppercase letters) 
+•Start non-terminal: S
+•Set of terminal symbols : a, b, c, d (lowercase) 
+•Set of production rules :
+1. SA | BC 
+2. A Aa | a 
+3. B bBCd | d 
+4. C dCcd | c 
+•Doing derivations of the rules we can produce valid strings of this grammar 
+•Example: S BC bBCdC bdCdC bdcdC 
+bdcdc 
+In blue a particular example 
+--- Page 10 ---
+COMP  - 10.- Compilers Parsing 
+CFG Example: A (reduced) grammar for 
+expressions 
+Production rules: 
+1. Letter = [a-z] 
+2. Op = [+-*/]  meaning “+” | “-” | “*” | “/” 
+3. Digit = [0-9] 
+4. Expr = Expr Op Expr 
+5. Expr = Number | Identifier 
+6. Identifier = Letter | Letter identifier 
+7. Number = Digit Number | Digit 
+Example: 23+b Expr Expr Op Expr Number Op Expr Digit Number Op 
+Expr 2 Digit Op Expr 23 Op Expr 23 + Expr 23 + 
+Identifier 23 + Letter 23 + b 
+--- Page 11 ---
+COMP  - 11.- Compilers Parsing 
+CFG Example: The  grammar specification 
+1. Set of non terminals ={Expr, Op, Number, Identifier, 
+Letter, Number, Digit} 
+2. Set of terminals =[a-z0-9+-*/] 
+3. Start Symbol = Expr 
+4. Production rules :
+1. Letter = [a-z] 
+2. Op = [+-*/] 
+3. Digit = [0-9] 
+4. Expr = Expr Op Expr 
+5. Expr = Number | Identifier 
+6. Identifier = Letter | Letter identifier 
+7. Number = Digit Number | Digit 
+--- Page 12 ---
+COMP  - 12.- Compilers Parsing 
+What is Parsing? 
+•Parsing is the process of discovering a sequence 
+of rule derivations that produce a particular strin g 
+of non-terminals 
+•When we say that we cannot parse the string 
+means:  we cannot find any combination of rule derivations that start from the start symbol and ends with the string 
+•A compiler needs a parser : a program that takes in 
+a sequence of tokens (terminal symbols) and discovers a derivation sequence, thus validating that the input is a syntactically correct program 
+--- Page 13 ---
+COMP  - 13.- Compilers Parsing 
+Derivations as Trees 
+•A convenient way to represent the sequence of derivations is a 
+syntactic tree or parse tree 
+•Example: S BC bBCdC bdCdC bdcdC 
+bdcdc 
+S
+B C
+bB C d
+d cc
+--- Page 14 ---
+COMP  - 14.- Compilers Parsing 
+Ambiguity 
+•We call a grammar ambiguous if a string of 
+terminal symbols can be reached by two different derivation sequences 
+–This is the string can have more than one parse tre e 
+•Example: 2+5*8 
+Expr 
+Expr 
+5 2+ Expr 
+8Expr Expr *Expr 
+Expr 
+2 8* Expr 
+5Expr Expr +
+Left parse-tree Right parse-tree 
+--- Page 15 ---
+COMP  - 15.- Compilers Parsing 
+Problems with Ambiguity 
+•Problem: syntax impacts meaning 
+•We don’t know what parse tree will be derived when there are multiple options 
+•We want unambiguous grammars 
+•It is possible to modify grammars to make them non-ambiguous 
+–By adding non-terminals 
+–By adding or rewriting derivation rules 
+•In the language example: add the rules to consider 
+operator precedence 
+--- Page 16 ---
+COMP  - 16.- Compilers Parsing 
+A non-ambiguous grammar for expressions 
+1. Letter = [a-z] 
+2. Op = [+-*/] 
+3. Digit = [0-9] 
+4. Expr = Term | Expr + Term | Expr – Term 
+5. Term = Term * Factor | Term / Factor | Factor 
+6. Factor = Number | Identifier 
+7. Identifier = Letter | Letter identifier 
+8. Number = Digit Number | Digit 
+Example: 4*5+3-8*9 1. Letter = [a-z] 
+2. Op = [+-*/] 
+3. Digit = [0-9] 
+4. Expr = Expr Op Expr 
+5. Expr = Number | Identifier 
+6. Identifier = Letter | Letter identifier 
+7. Number = Digit Number | Digit 
+--- Page 17 ---
+COMP  - 17.- Compilers Parsing 
+A non-ambiguous grammar for expressions 
+1. Letter = [a-z] 
+2. Digit = [0-9] 
+3. Expr = Term | Expr + Term | Expr – Term 
+4. Term = Term * Factor | Term / Factor | Factor 
+5. Factor = Number | Identifier 
+6. Identifier = Letter | Letter identifier 
+7. Number = Digit Number 
+Example: 4*5+3-8*9 
+--- Page 18 ---
+COMP  - 18.- Compilers Parsing 
+Another Grammar Example: for in C 
+1. ForStatement = for “(“ StmtCommaList “;” ExprCommaList “;” StmtCommaList “)” “{“ StmtSemicList “}” 
+2. StmtCommaList = ε | Stmt | Stmt “,” StmtCommaList 
+3. ExprCommaList = ε | Expr | Expr “,” ExprCommaList 
+4. StmtSemicList = ε | Stmt | Stmt “;” StmtSemicList 
+5. Expr = … 
+6. Stmt = … for(i=0; i < b; i++){ 
+a+=i; 
+}
+--- Page 19 ---
+COMP  - 19.- Compilers Parsing 
+A Program Example (sketch) 
+1. Program = VarDecList FuncDecList 
+2. VarDecList = ε | VarDecl | VarDecl VarDecList 
+3. VarDecl = Type IdentCommaList “;” 
+4. IdentCommaList = Ident | Ident “,” identCommaList 
+5. Type = int | char | float 
+6. FuncDeclList = ε | FuncDecl | FuncDecl FuncDeclList 
+7. FuncDecl = Type Ident “(“ ArgList “)” “{“VardelList StmtList “}” 
+8. StmtList = ε | Stmt | Stmt StmtList 
+9. Stmt = Ident “=“ Expr “;” | ForStatement | … 
+10. Expr = … 
+11. Ident = … 
+--- Page 20 ---
+COMP  - 20.- Compilers Parsing 
+Real World CFGs 
+•Some sample grammars 
+–LISP 7 rules 
+–PROLOG 19 rules 
+–Java 30 rules 
+–C 60 rules 
+–Ada 280 rules 
+•LISP is particularly easy because 
+–No operators, just function calls 
+–Therefore no precedence, associativity specified 
+•LISP is very easy to parse 
+•In java specification the description of the operat or 
+precedence and associativity takes 25 pages 
+--- Page 21 ---
+COMP  - 21.- Compilers Parsing 
+What is parsing? 
+•Discovering the derivation of a string 
+–If one exists 
+•Harder than generating strings 
+•Two major approaches 
+–Top-down parsing 
+–Bottom-up parsing 
+•Both don’t work on all context-free grammars 
+–Properties of the grammar determine the parsing approach 
+–We may be able to transform a grammar 
+–Goal: making parsing efficient 
+--- Page 22 ---
+COMP  - 22.- Compilers Parsing 
+Two Approaches 
+•Top-down parsers LL(1), recursive descent 
+–Start at the root of the parse tree and grow toward s 
+leaves 
+–Pick a production and try to match the input 
+–What happens if the parser chooses the wrong one? 
+•Bottom-up parsers LR(1), operator precedence 
+–Start at the leave and grow toward the root 
+–Problem: it may have multiple possible ways to do t his 
+–Key idea: encode possible parse trees in an interna l 
+state (similar to out NFA DFA conversion) 
+–Bottom-up parsers handle a larger class of grammars
+--- Page 23 ---
+COMP  - 23.- Compilers Parsing 
+Grammars and Parsers 
+•LL(1) parsers: Top-down 
+–Left-to-right input 
+–Leftmost derivation 
+–1 symbol of look-ahead 
+•LR(1) parsers: Bottom-up 
+–Left-to-right input 
+–Rightmost derivation 
+–1 symbol of look-ahead 
+•Others: LL(k), LR(k), … The grammars recognized are 
+LL(1) grammars 
+The grammars recognized are 
+LR(1) grammars 
+--- Page 24 ---
+COMP  - 24.- Compilers Parsing 
+Top-down Parsing 
+--- Page 25 ---
+COMP  - 25.- Compilers Parsing 
+Example 
+Grammar (with precedence) 
+•T= [a-z0-9+-*/] 
+•NT= {expr, term, factor, number, identifier} 
+•Start Symbol= expr 
+Production rules 
+1. expr = expr + term 
+2. | expr - term 
+3. | term 
+4. term = term * factor 
+5. | expr / term 
+6. | factor 
+7. factor = number 
+8. | identifier 
+Input string : x –2 * y We assume numbers of 1 
+digit and identifiers of one 
+letter, so we omit the rules of number and identifier (for completeness there 
+should be there, but 
+examples become longer unnecessarily, this way the 
+parsing examples take one step less) 
+--- Page 26 ---
+COMP  - 26.- Compilers Parsing 
+Example: by visual inspection 
+Production rules 
+1. expr = expr + term 
+2. | expr - term 
+3. | term 
+4. term = term * factor 
+5. | term / factor 
+6. | factor 
+7. factor = number 
+8. | identifier ↑current position 
+But how to do an automatic process to obtain the correct derivation? Input string: x - 2 * y 
+- expr ↑x - 2 * y 
+2 expr - term ↑x - 2 * y Rule Sentential form Input String 
+3 term - term ↑x - 2 * y 
+6 factor - term ↑x - 2 * y 
+8 id - term x - ↑2 * y 
+4 id - term * factor x - ↑2 * y 
+6 id - factor * factor x - ↑2 * y 
+7 id - number * factor x - 2 * ↑y
+8 id - number * id x - 2 * y ↑expr 
+expr 
+-term 
+factor 
+xfactor term factor 
+* 2 yterm 
+--- Page 27 ---
+COMP  - 27.- Compilers Parsing 
+Problem: 
+•We cannot continue 
+•We guessed wrong at step 2 
+•What should we do now? 
+–Go back to step 2 and take another derivation Automatic Process: use rules in order 
+Production rules 
+1. expr expr + term 
+2. | expr - term 
+3. | term 
+4. term term * factor 
+5. | term / factor 
+6. | factor 
+7. factor number 
+8. | identifier ↑current position Input string: x - 2 * y 
+- expr ↑x - 2 * y 
+1 expr + term ↑x - 2 * y Rule Sentential form Input String 
+3 term + term ↑x - 2 * y 
+6 factor + term ↑x - 2 * y 
+8 id + term x ↑ - 2 * y expr 
+expr 
++term 
+factor 
+xterm 
+fails 
+--- Page 28 ---
+COMP  - 28.- Compilers Parsing 
+Problem: 
+•More input to read, but no non-terminal to process 
+•Fail: backtrack again Backtracking 
+Production rules 
+1. expr expr + term 
+2. | expr - term 
+3. | term 
+4. term term * factor 
+5. | term / factor 
+6. | factor 
+7. factor number 
+8. | identifier ↑current position Input string: x - 2 * y 
+- expr ↑x - 2 * y 
+1 expr - term ↑x - 2 * y Rule Sentential form Input String 
+3 term - term ↑x - 2 * y 
+6 factor - term ↑x - 2 * y 
+8 id - term x - ↑ 2 * y expr 
+expr 
+-term 
+factor 
+xterm factor 
+2If we cannot match the current input position 
+•Undo the productions 
+•Choose another production 
+•Continue 
+6 id - factor x - ↑ 2 * y 
+7 id - number x - 2 ↑ * y 
+--- Page 29 ---
+COMP  - 29.- Compilers Parsing 
+Production rules 
+1. expr expr + term 
+2. | expr - term 
+3. | term 
+4. term term * factor 
+5. | term / factor 
+6. | factor 
+7. factor number 
+8. | identifier Successful Parse Input string: x - 2 * y 
+- expr ↑x - 2 * y 
+1 expr - term ↑x - 2 * y Rule Sentential form Input String 
+3 term - term ↑x - 2 * y 
+6 factor - term ↑x - 2 * y 
+8 id - term x - ↑ 2 * y expr 
+expr 
+-term 
+factor 
+xterm factor 
+*4 id – term * factor x - ↑ 2 * y 
+6 id – factor * factor x - ↑ 2 * y term 
+2factor 
+y7 id – num * factor x - 2 * ↑ y
+8 id – num * id x - 2 * y ↑ 
+•The final derivation tree has all non-terminals in the leaves, when finish to process all input string 
+•The goal of a parser: an automatic process that tries all the 
+possibilities and finds the derivation tree if exists ↑current position 
+--- Page 30 ---
+COMP  - 30.- Compilers Parsing 
+Top-down Parsing 
+•Start with the root of the parse tree 
+–Root of the tree: node labeled with the start symbol 
+Algorithm 
+1. Repeat until the parse tree matches the input strin g 
+1. At node A, select one of A’s possible productions 
+1. Add a child node for each symbol on (rhs) derivatio n rule 
+2. Find the next (non-terminal) node to expand 
+2. Done when: 
+1. Leaves of parse tree match the input string (success) 
+2. No more derivations to apply but don’t match (fail) 
+--- Page 31 ---
+COMP  - 31.- Compilers Parsing 
+Infinite Expansion Problem 
+•Rules that do not consume any input value, but expa nd 
+the tree with additional non-terminal factors, can produce 
+an infinite substitution 
+–An automatic process would not end 
+•Wrong choice of rule sequence can lead to a non-ending 
+program 
+–It may not be as obvious as this 
+•This grammar is left recursive Rule -222.. Sentential form Input String expr expr - term expr - term - term expr – term – term – term .. 
+↑x – 2 * y 
+↑x – 2 * y 
+↑x – 2 * y 
+↑x – 2 * y 
+.. ↑current position Input string: x – 2 * y Production rules 
+1. expr expr + term 
+2. | expr - term 
+3. | term 
+4. term term * factor 
+5. | term / factor 
+6. | factor 
+7. factor number 
+8. | identifier 
+--- Page 32 ---
+COMP  - 32.- Compilers Parsing 
+Left Recursion 
+•Formally: A grammar is left recursive if ∃a non-terminal 
+A such that A * A α (for some set of symbols α) 
+•What does *mean? 
+–With one or more derivations it can get again the same symbol in the left side of the derivation (recursive) 
+–A Bx 
+–B Ay 
+–After applying these two derivations to A it results to Ayx 
+•It is a recursion because it appears the same symbol 
+•It is left-side recursive because the same symbol remains (first) in the 
+left side of the expression 
+•Top-down parsers cannot handle left recursion 
+•But, left recursion can be removed systematically (automatically) 
+--- Page 33 ---
+COMP  - 33.- Compilers Parsing 
+Notation 
+•Non-terminals –Capital letter ( A, B, C.. ) 
+•Terminals –Lowercase underlined letters ( x, y, 
+c.. ) 
+•A mixed of terminals and non-terminals – Greek 
+letters ( α, β, γ …) 
+•Example 
+Rule 11 Production Rule 
+A B + x 
+A B α α = + x
+--- Page 34 ---
+COMP  - 34.- Compilers Parsing 
+Eliminating left-recursion 
+•Example 
+•Rewrite as Rule 12 Production Rule 
+foo foo α
+| βLanguage? 
+Rule 123 Production Rule 
+foo β bar 
+bar α bar 
+| ε
+Same Language: β followed by 0 or more α’s New non-terminal bar 
+that appears at the right side of the expression 
+This production give one β
+These 2 productions give 0 or more α’s 
+The new bar non-terminal symbol is on the right, so now the pro cess 
+ends as all rule substitutions imply an advance in the input string 
+(or no expansion of non-terminal symbols) β followed by 0 or more α’s (βα*) 
+--- Page 35 ---
+COMP  - 35.- Compilers Parsing 
+Language example: 
+Eliminating left-recursion 
+•Left-recursion rules: 
+–1, 2, 3 
+–4, 5, 6 
+•Eliminating left-recursion: Production rules 
+1. expr expr + term 
+2. | expr - term 
+3. | term 
+4. term term * factor 
+5. | term / factor 
+6. | factor 
+7. factor number 
+8. | identifier 
+1. expr term expr2 
+2. expr2 + term expr2 
+3. | - term expr2 
+4. | ε4. term factor term2 
+5. term2 * factor term2 
+6. | / factor term2 
+7. | εRule 123 Production Rule 
+foo β bar 
+bar α bar 
+| εRule 12 Production Rule 
+foo foo α
+| β
+--- Page 36 ---
+COMP  - 36.- Compilers Parsing 
+Eliminating left-recursion 
+•Resulting grammar 
+–All right recursive 
+–Keeps same definition of the language 
+–But not as intuitive to read 
+•Top-down parser 
+–Always terminates 
+–Still does backtracking 
+•There is an algorithm to do it automatically, but we do not do it in this course 
+--- Page 37 ---
+COMP  - 37.- Compilers Parsing 
+Right-recursive grammar 
+•We can choose the correct production by looking at the next input symbol 
+–This is called lookahead Production rules 
+1. expr term expr2 
+2. expr2 + term expr2 
+3. | - term expr2 
+4. | ε
+5. term factor term2 
+6. term2 * factor term2 
+7. | / factor term2 
+8. | ε
+9. factor number 
+10. | identifier Productions with no choice (from non-terminal symbol to nextthere is only one rule to apply) Productions uniquely identified by a terminal symbol at the start 
+--- Page 38 ---
+COMP  - 38.- Compilers Parsing 
+Lookahead 
+•Goal: avoid backtracking 
+–Look at future input symbols 
+–Use extra context to make right decision 
+•How much lookahead is needed? 
+–In general, an arbitrary amount for the full class of 
+CFGs 
+–Use fancy-dancy algorithm  - CYK algorithm O(n 3)
+•Fortunately 
+–Many CFGs can be parsed with limited lookahead 
+–Covers most programming languages (not C++, nor Perl) 
+•We only cover lookahead of 1 
+--- Page 39 ---
+COMP  - 39.- Compilers Parsing 
+Top-down Parsing 
+•Goal: Given productions A α | β, the parser 
+should be able choose between α and β 
+•Trying to match A 
+–How can the next input token help us decide? 
+•Solution: FIRST sets (almost a solution) 
+–Informally: F IRST (α) is the set of tokens that could 
+appear as the first symbol in a string derived from  α 
+–Definition: x in F IRST (α) iff α * xγ
+•Building F IRST sets 
+–We’ll look at the algorithm later 
+--- Page 40 ---
+COMP  - 40.- Compilers Parsing 
+Top-down Parsing 
+•The LL(1) property 
+•Given A α and A β we would like: 
+–FIRST (α) ∩ F IRST (β) = ∅
+–We write F IRST (A = α) as F IRST (α) 
+•Parser can make right choice by 1 lookahead token 
+•Almost…what it cannot handle? 
+–ε productions 
+--- Page 41 ---
+COMP  - 41.- Compilers Parsing 
+Top-down Parsing : ε productions 
+•ε productions complicate the definition of LL(1) 
+•Consider A α and A β and α may be empty 
+•In this case there is no symbol to identify α 
+•Example 
+–What is F IRST (#4)? 
+={ ε } 
+–When we match with production #4? 
+•If A is empty what will the next symbol be? 
+•It must be one of the symbols that immediately follow an A: 
+z
+•Solution : the F OLLOW set Rule 1234 Production Rule 
+S A z
+A x B
+| y C
+| ε
+--- Page 42 ---
+COMP  - 42.- Compilers Parsing 
+FOLLOW sets 
+•Build a F OLLOW set for each symbol that could 
+produce ε 
+•Extra condition for LL: 
+•Example: 
+–FIRST (#2) = { x } 
+–FIRST (#3) = { y } 
+–FIRST (#4) = { ε } 
+–FOLLOW (A) = { z } 
+–Now we can uniquely identify each production: 
+•If we are trying to match an A and the next token is z, then 
+match production 4 Rule 1234 Production Rule 
+S A z
+A x B
+| y C
+| ε
+--- Page 43 ---
+COMP  - 43.- Compilers Parsing 
+Right-hand side symbols FIRST and F OLLOW sets: Formal Definition 
+--- Page 44 ---
+COMP  - 44.- Compilers Parsing 
+FIRST and F OLLOW sets – Details 
+•Note 
+–FIRST and F OLLOW are sets 
+–FIRST may contain ε in addition to other symbols 
+•Example: 
+–FIRST (#2) ? 
+•FIRST (B) = { x, y, ε } 
+–When do we care about F OLLOW (B)? 
+•If FIRST (B) contains ε 
+•Definition: FIRST +(A α) as: 
+–FIRST(α) ∪FOLLOW (A) if ε  ∈FIRST (α) 
+–FIRST (α), otherwise 
+•FIRST +(B) = {x, y} ∪FOLLOW (B) = {x, y, k} Rule 12456 Production Rule 
+S A z
+A B k
+B x
+| y
+| ε
+--- Page 45 ---
+COMP  - 45.- Compilers Parsing 
+LL(1) Property 
+•Key idea 
+–Build a parse tree top-down 
+–Use lookahead token to pick next production 
+–Each production must be uniquely identified by the terminal symbols that may appear at the start of st rings 
+derived from it 
+•Definition: 
+A grammar is LL(1) iff A= α and A β and 
+FIRST+(A α) ∩FIRST+(A β)= ∅
+(intuitively: when we can decide what production rule to apply next just looking at the next symbol of the input) 
+--- Page 46 ---
+COMP  - 46.- Compilers Parsing 
+Parsing LL(1) grammar 
+Code: simple, fast routine to recognize each 
+production 
+Given A β1| β 2| β 3 with 
+FIRST+(β i) ∩FIRST+(β j)= ∅for all i != j 
+
+--- Page 47 ---
+COMP  - 47.- Compilers Parsing 
+Computing First sets 
+•Idea: Use F IRST sets of the right-hand side (rhs) of 
+the production A B1B2B3…
+•Cases 
+–FIRST (A B) = FIRST (B 1)
+•What FIRST (B 1) mean? 
+•Union of FIRST (B 1γ) for all γ 
+–What if ε in FIRST (B 1)? 
+•FIRST (A B) ∪= FIRST (B 2)
+–What if ε in FIRST (B i) for all i?
+•FIRST (A B) ∪= {ε} 
+⋃=		equivalent += 
+--- Page 48 ---
+COMP  - 48.- Compilers Parsing 
+Algorithm 
+•For one production p = A β
+1. expr term expr2 
+2. expr2 + term expr2 
+3. | - term expr2 
+4. | ε
+5. term factor term2 
+6. term2 * factor term2 
+7. | / factor term2 
+8. | ε
+9. factor number 
+10. | identifier
+--- Page 49 ---
+COMP  - 49.- Compilers Parsing 
+Computing F OLLOW sets 
+•Idea: Push F OLLOW sets down, use F IRST where 
+needed 
+A B1B2B3B4… B k
+•Cases: 
+–What is F OLLOW (B1)? 
+•FOLLOW (B1) = F IRST (B2)
+•In general: F OLLOW (Bi) = F IRST (Bi+1 )
+–What is F OLLOW (Bk)? 
+•FOLLOW (Bk) = F OLLOW (A) 
+–What if ε ∈FIRST (Bk)? 
+•FOLLOW (Bk-1) ∪= FOLLOW (A) 
+--- Page 50 ---
+COMP  - 50.- Compilers Parsing 
+Example 
+•FIRST (3) = {+}
+•FIRST (4) = {-}
+•FIRST (5) = {ε} Production rules 
+1. goal expr 
+2. expr term expr2 
+3. expr2 + term expr2 
+4. | - term expr2 
+5. | ε
+6. term factor term2 
+7. term2 * factor term2 
+8. | / factor term2 
+9. | ε
+10. factor number 
+11. | identifier •FIRST (1) = F IRST (2) 
+= F IRST (6) 
+= F IRST (10) ⋃ 		 FIRST (11) 
+= { number, identifier} •FIRST (7) = {*}
+•FIRST (8) = {/}
+•FIRST (9) = {ε} 
+•FIRST (1) = ? 
+--- Page 51 ---
+COMP  - 51.- Compilers Parsing 
+Example 
+•FOLLOW (goal) = {EOF} 
+•FOLLOW (expr) = F OLLOW (goal) = {EOF} 
+•FOLLOW (expr2) = F OLLOW (expr) = {EOF} 
+•FOLLOW (term) = ? Production rules 
+1. goal expr 
+2. expr term expr2 
+3. expr2 + term expr2 
+4. | - term expr2 
+5. | ε
+6. term factor term2 
+7. term2 * factor term2 
+8. | / factor term2 
+9. | ε
+10. factor number 
+11. | identifier •FOLLOW (term) = F IRST (expr2) 
+= {+, -, ε}= {+, -, F OLLOW (expr)} 
+= {+, -, EOF} 
+•FOLLOW (term2) = F OLLOW (term) 
+•FOLLOW (factor) = ? 
+•FOLLOW (factor) = F IRST (term2) 
+= {*, /, ε}= {*, /, F OLLOW (term)} 
+= {*, /, +, -, EOF} 
+--- Page 52 ---
+COMP  - 52.- Compilers Parsing 
+LL(1) Property 
+•Recall: a grammar is LL(1) iff 
+A α and A β and 
+FIRST +(A α ) ∩ F IRST +(A β ) = ∅
+•What if my grammar is not LL(1)? 
+–We may be able to fit it with transformations 
+•Example: 
+Production rules 
+1. A α β1
+2. | α β2
+3. | α β3Production rules 
+1. A α Z
+2. Z β1
+3. | β2
+4. | β3
+--- Page 53 ---
+COMP  - 53.- Compilers Parsing 
+Left Factoring 
+•Graphically 
+Production rules 
+1. A α β1
+2. | α β2
+3. | α β3
+Production rules 
+1. A α Z
+2. Z β1
+3. | β2
+4. | β3
+
+--- Page 54 ---
+COMP  - 54.- Compilers Parsing 
+Expression Example 
+Production rules 
+1. factor identifier 
+2. | identifier [expr] 
+3. | identifier (expr) 
+After factoring Production rules 
+1. factor identifier post 
+2. post [expr] 
+3. | (expr) 
+4. | ε FIRST +(1) = {identifier}
+FIRST +(2) = {identifier}
+FIRST +(3) = {identifier}
+FIRST +(1) = {identifier}
+FIRST +(2) = { [ }
+FIRST +(3) = { ( }
+FIRST +(4) = ? 
+= F OLLOW (post) 
+= { …} Now it has LL(1) property 
+--- Page 55 ---
+COMP  - 55.- Compilers Parsing 
+Expression Example  (Graphically) 
+Production rules 
+1. factor identifier post 
+2. post [expr] 
+3. | (expr) 
+4. | ε Production rules 
+1. factor identifier 
+2. | identifier [expr] 
+3. | identifier (expr) 
+
+--- Page 56 ---
+COMP  - 56.- Compilers Parsing 
+Left factoring Reach 
+•Using left factoring and left recursion, can we turn an arbitrary CFG to a form that it meets the LL(1) property? 
+•Given a CFG that does not meet LL(1) condition, it is 
+undecidable whether or not an LL(1) 
+grammar exists 
+--- Page 57 ---
+COMP  - 57.- Compilers Parsing 
+Limits of LL(1) 
+•Example: 
+{a n0b n| n>=1} ∪{a n1b 2n | n>=1} 
+no LL(1) grammar 
+aa0bb aa1bbbb 
+Production rules 
+1. G a A b
+2. | a B bb 
+3. A a A b
+4. | 0
+5. B a B bb 
+6. | 1Problem: it needs an unbounded number of a’s 
+before you can determine whether you are in 
+the A group or B group Not an LL(1) grammar 
+--- Page 58 ---
+COMP  - 58.- Compilers Parsing 
+Predictive Parsing Implementation 
+•The parser can “predict” the correct expansion 
+•Using lookahead and F IRST and F OLLOW sets 
+•Two kinds of predictive parsers implementations 
+–Recursive descent 
+•Often hand-written 
+–Table driven 
+•Generate tables from FIRST and FOLLOW sets 
+--- Page 59 ---
+COMP  - 59.- Compilers Parsing 
+Recursive Descent 
+•This produces a parser with six 
+mutually recursive routines: 
+–goal 
+–expr 
+–expr2 
+–term 
+–term2 
+–factor 
+•Each one recognizes one NT or T 
+•The term descent refers to the 
+direction in which the parse tree is built Production rules 
+1. goal expr 
+2. expr term expr2 
+3. expr2 + term expr2 
+4. | - term expr2 
+5. | ε
+6. term factor term2 
+7. term2 * factor term2 
+8. | / factor term2 
+9. | ε
+10. factor number 
+11. | identifier 
+--- Page 60 ---
+COMP  - 60.- Compilers Parsing 
+Example Code 
+•goal Symbol: 
+•Top-level expression (expr) 
+Note: Eventually this should be generalized to an a rray of rules, each with rhs and 
+list of lhs terms (to have a code general for any s et of rules) 
+--- Page 61 ---
+COMP  - 61.- Compilers Parsing 
+Example Code 
+•Match expr2: 
+Note: To meet our requirements the terminal terms s hould be defined as a 
+CONSTANT definition. Example: SUM_OP = ‘+’ 
+--- Page 62 ---
+COMP  - 62.- Compilers Parsing 
+Top-down parsing 
+•So far: 
+–It gives us a yes or no answer 
+–But we want to build the parse tree 
+–How? 
+•Add actions to matching routines 
+–Build a new node of the tree (lhs) at each matching  
+rule connecting to all its rhs terms (stored in a st ack) 
+--- Page 63 ---
+COMP  - 63.- Compilers Parsing 
+Table-driven Approach 
+•Encode mapping in a table 
+–Row for each non-terminal 
+–Column for each terminal symbol 
+Table[NT, symbol] = rule# 
+If symbol ∈FIRST +(NT rhs(#)) Production rules 
+1. goal expr 
+2. expr term expr2 
+3. expr2 + term expr2 
+4. | - term expr2 
+5. | ε
+6. term factor term2 
+7. term2 * factor term2 
+8. | / factor term2 
+9. | ε
+10. factor number 
+11. | identifier 
++ - * / id num 
+expr2 term expr2 
+r3 term expr2 r4 error error error error 
+term2 ε, r9 ε, r9 factor term2 
+r7 factor term2 r8 error error 
+factor error error error error r11 (do 
+nothing) r10 (do nothing)
+Only shown rules for NT with different options (but all NT raws s hould be included) 
+--- Page 64 ---
+COMP  - 64.- Compilers Parsing 
+Table-driven Approach 
++ - * / id num EOF 
+goal error expr 
+r1 error 
+expr error term expr2 
+r2 error 
+expr2 term expr2 
+r3 term expr2 
+r4 error ε
+r5 
+term error factor term2 
+r6 error 
+term2 εr9 factor term2 
+r7 factor term2 
+r8 error error 
+factor error (nothing) 
+r11 (nothing)
+r10 error 
+--- Page 65 ---
+COMP  - 65.- Compilers Parsing 
+Summary 
+•Top-down parsing starts with the start symbol and k eeps 
+advancing applying production rules substituting th e lhs 
+by the rhs 
+•To decide what production rule to use, it defines t he 
+FIRST , FOLLOW , and FIRST + sets, for each production 
+rule 
+•An LL(1) language can decide what production rule t o 
+apply by just looking at next input symbol (no conf lict) 
+•Different ways to implement it 
+–Recursive Descent: apply a routine for each symbol (the rule) 
+–Table Driven: build the table of NT symbols and rules 
+–Both use a stack to keep track of the tree build parse tree 

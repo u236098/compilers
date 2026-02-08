@@ -172,10 +172,10 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
 
     while (1) {
         ch = cs_peek(cs);
-        CNT_COMP(*cnt, 1);
+        CNT_COMP(cnt, 1);
 
         cls = classify_char(ch);
-        CNT_COMP(*cnt, 1);
+        CNT_COMP(cnt, 1);
 
         next = T[state][cls];
 
@@ -219,14 +219,14 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
 
             /* Should not happen — consume one char to avoid infinite loop */
             cs_get(cs);
-            CNT_IO(*cnt, 1);
+            CNT_IO(cnt, 1);
             return 0;
         }
 
         /* --- Handle whitespace skip inside DFA (START → START) --- */
         if (state == ST_START && next == ST_START) {
             cs_get(cs);
-            CNT_IO(*cnt, 1);
+            CNT_IO(cnt, 1);
             continue;
         }
 
@@ -238,8 +238,8 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
         }
 
         ch = cs_get(cs);
-        CNT_IO(*cnt, 1);
-        CNT_GEN(*cnt, 1);
+        CNT_IO(cnt, 1);
+        CNT_GEN(cnt, 1);
         add_char_to_lexeme(buf, &buf_len, ch);
 
         state = next;

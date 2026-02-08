@@ -1,0 +1,560 @@
+
+--- Page 1 ---
+COMP  - 1.- Compilers Lexical Analysis 
+Lexical Analysis 
+Dolors Sala 
+--- Page 2 ---
+COMP  - 2.- Compilers Lexical Analysis 
+Bibliography 
+These slides are taken from the following slide lectures 
+•Fredrik Kjolstad, Compilers  CS143, Stanford University (Lectures 3 and 4) 
+•Henri Casanova, Machine learning and systems programming ICS312 (Module 9 Compiling), University of Hawaii (Lexing Lecture) 
+•Yannis Smaragdakis, Compilers K31, University of Athens, Lecture 3 
+--- Page 3 ---
+COMP  - 3.- Compilers Lexical Analysis 
+Lexical Analysis 
+•Identify the words in the input stream 
+•In linguistics the lexical analysis is to identify correct words 
+–The correct words are listed at the dictionary 
+•The compiler with the lexical analysis does 
+–Identifies the words (in the input code) 
+–Builds the table (dictionary) of keywords and new 
+identifiers (variable declarations, functions…) 
+--- Page 4 ---
+COMP  - 4.- Compilers Lexical Analysis 
+Lexical Analyzer: Definition 
+•Lexical analyzer translates the input code into a form 
+more usable to the rest of the compiler 
+•It does two things: 
+–Transforms the input source code into a sequence of substrings 
+–Classifies them according to their role or syntactic category 
+•The input is the source code 
+•The output is a list of substrings called tokens 
+•Lexical analysis is also called lexing or scanning 
+
+--- Page 5 ---
+COMP  - 5.- Compilers Lexical Analysis 
+Token 
+•AToken is an indivisible lexical unit (a lexeme) 
+classified according to syntactic categories 
+•Lexeme :
+–Keywords and special characters: 
+•if, while, for,.. 
+•+ - / : > < >> < … 
+–Names and numbers 
+•(Syntactic) Category : identifier, integer, floating-point 
+number, operator, keyword… 
+--- Page 6 ---
+COMP  - 6.- Compilers Lexical Analysis 
+Lexical Analysis Terms 
+•AToken is an indivisible lexical unit (a lexeme) 
+classified according to syntactic categories 
+•Lexeme is the string that represents an instance of a 
+token 
+•Pattern is the description of the form that represents all 
+possible lexemes a token can take 
+Example: 
+Token            Pattern (informal description)   Sample lexemes 
+--- Page 7 ---
+COMP  - 7.- Compilers Lexical Analysis 
+Lexical Analysis Terminology Examples 
+C example: 
+printf(“Hello %s\n”, name); 
+Tokens?
+(printf, id) (“Hello %s\n”, literal) (name, id) 
+How about ( , ; ) ?             
+Token            Pattern (informal description)   Sample lexemes 
+They are also tokens, we’ll see full specification 
+--- Page 8 ---
+COMP  - 8.- Compilers Lexical Analysis 
+The lookahead Problem 
+•The lexer has to process the source code character by 
+character in order and identify the lexemes 
+•Just looking at the current character is not enough  to 
+determine if the lexeme is finished 
+Example: in c, = vs == or i vs int 
+In this case we need to check the next character to decide one or the other, this means a lookahead of 1, but… beginner vs begin? 
+•The lookahead is the amount of characters we need to 
+look to correctly distinguish all possible lexemes of a 
+language 
+–Each language may have a different lookahead 
+–Languages should require “small” lookaheads 
+--- Page 9 ---
+COMP  - 9.- Compilers Lexical Analysis 
+Non-essential Characters 
+•The lexical analysis neglects non-essential charact ers 
+–Spaces, tabs, linefeeds 
+–Comments 
+•The lexer should allow arbitrary number of these non -
+essential characters in the input (source code) 
+•Input example: 
+main(){ 
+int x = 0; 
+}
+Seen as a single string of characters: main(){\n\tint x = 0;\n}\n
+--- Page 10 ---
+COMP  - 10.- Compilers Lexical Analysis 
+Lexical Analysis: Example (cont.) 
+•Input example: 
+main(){ 
+int x = 0; 
+}
+The input is just a single string of characters: 
+main(){\n\tint x = 0;\n}\n
+Tokenization: 
+(main , key)(“ (”,op) (“ )”,op) (“ {”,op) ( int , key)( x, id) (“ =”,op) (“ ;”,op)
+(“ }”,op)
+We’ll see the exact specification of tokens format. 
+--- Page 11 ---
+COMP  - 11.- Compilers Lexical Analysis 
+Lexer Specification 
+•How to formalize the lexer’s job to recognize the to kens 
+of a specific language? 
+•We need a language: the language of tokens 
+•A language is specified with two components: 
+–An alphabet denoted as Σ
+•Example: ASCII 
+–The subset of all possible strings over Σ (dictionary) 
+•Language of tokens -- specify which strings are toke ns 
+–It can be specified with regular expressions 
+--- Page 12 ---
+COMP  - 12.- Compilers Lexical Analysis 
+Examples of Languages 
+Alphabet = English characters Slight differences with Catalan/Spanish Big differences with Chinese, Arabic Language = English sentences 
+Not every string of English 
+characters is an English sentence Alphabet = ASCII Language = c programs 
+Not every ASCII 
+combination of characters is a correct c line of code 
+--- Page 13 ---
+COMP  - 13.- Compilers Lexical Analysis 
+Regular Expressions 
+•Languages are sets of strings 
+•Need a formal notation for specifying which ones 
+•The standard notation for regular languages is the regular expressions 
+•A regular expression (RE) is a string (in a meta-
+language) that describes a pattern (in the token la nguage) 
+–The regular expression has a notation/language so it is a language to describe a language (meta-language) 
+--- Page 14 ---
+COMP  - 14.- Compilers Lexical Analysis 
+Regular Expressions Specification 
+Atomic regular expressions 
+•Single character: ‘c’ = {“c”} 
+•Epsilon : ε = {“”} The empty string (a string with 0 
+characters 
+Compound regular expressions If A and B are regular 
+expressions over and alphabet ∑ 
+•Union (+): A + B = {s | s ϵ A or s ϵ B} 
+•Concatenation : AB = {ab | a ϵ A and b ϵ B} 
+•Iteration (*) : A* = ⋃  where Ai = AA…A  i times 
+--- Page 15 ---
+COMP  - 15.- Compilers Lexical Analysis 
+More Regular Expressions Notation 
+Symbol Meaning Example + Union (one or another) a + b a or b
+* Zero or more times a* + (a +) One or more times a+aa* 
+? Optional (zero or one time) b?a* ba* + a* 
+[] Character class [0-9] any digit 
+[a-zA-Z_] any lower or upper case letter or underscore 
+?! (?!pattern) Negative lookahead (?!aa)a* 
+Any number of a’s except aa 
+Useful notation for the P2 Lexer 
+--- Page 16 ---
+COMP  - 16.- Compilers Lexical Analysis 
+Examples of Regular Expressions (I) 
+•Regular expressions are common in our day-to-day li fe 
+•Phone numbers: (93)543-2333 
+–∑= 
+ ⋃{ ‘-’, ‘(’,‘)’} 
+–exchange = digits 2
+–area = digits 3
+–phone = digits 4
+–phone number = ‘(‘ + exchange + ‘)’ + area + ‘-’ + pone 
+Note the difference between a meta-character (a character 
+of the language to define regular expressions) and a 
+character of the alphabet: +34(93)543-2333 
+--- Page 17 ---
+COMP  - 17.- Compilers Lexical Analysis 
+Examples of Regular Expressions (II) 
+•Email Addresses: dolors@upf.edu 
+–∑=  ⋃{ ‘.’, ‘@’} 
+–name = letter + 
+–address = name + ‘@’ + name + ‘.’ + name 
+•Can it recognize the email: dolors.sala@upf.edu ?
+–name = letter + + (‘.’ + letter +)*
+•Can it recognize the email: dolors2022@upf.edu ?
+–∑=  ⋃
+  ⋃{ ‘.’, ‘@’} 
+–name = identifier + + ‘@’ + (‘.’ + identifier +)*
+•Can it recognize any email address? Defined in previous slides: letter = ‘A’ + ‘B’ + … + ‘Z’ + ‘a’ + ‘b’ + … + ‘z’
+Defined in previous slides:digit = [0-9] 
++ 
+identifier = letter (letter + digit)* 
+--- Page 18 ---
+COMP  - 18.- Compilers Lexical Analysis 
+Notation: Tokens in regular expressions 
+•We describe tokens in regular expressions 
+•Keyword : “int” or “begin” or “else” or … 
+(Abbreviation: ‘int’ = ‘i’+ ‘n’+ ‘t’) 
+•Integers : a non-empty string of digits 
+–∑ = [0-9] 
+–digit = [0-9] 
+–integer = digit +
+•Identifier : strings of letters or digits, starting with a let ter 
+–∑ = [a-zA-Z0-9]
+–letter = [a-zA-Z] 
+–identifier = letter (letter + digit)* 
+•Whitespace : a non-empty sequence of blank spaces, 
+newlines and tabs: (‘ ’ + ‘\n’ + ‘\t’) +
+--- Page 19 ---
+COMP  - 19.- Compilers Lexical Analysis 
+Regular Expressions in SW 
+•Grep: Linux utility to identify a string in a file 
+•Perl Shell: program that process a text file applyi ng a set 
+of define string matching rules 
+•Text editors apply regular expressions for string replacements 
+•Many programs have the need to identify patterns an d 
+use regular expressions internally, including compi lers 
+•Not a unified syntax of regular expressions: Each one has 
+its own 
+--- Page 20 ---
+COMP  - 20.- Compilers Lexical Analysis 
+REs Implementation: Finite Automata 
+•How do we use the regular expressions (REs) to pars e 
+the input source code and generate the token stream ? 
+•Regular expressions denote the (regular) language 
+•Regular languages are recognized by Finite Automata
+•Therefore we implement the language defined by a regular expression implementing the corresponding automata 
+--- Page 21 ---
+COMP  - 21.- Compilers Lexical Analysis 
+Implementation of lexical Analysis 
+•Specify lexical structure in regular expressions 
+•Transform it to a finite automata 
+–Deterministic finite automata DFA 
+–Non-deterministic finite automata NFA 
+•Implementation of regular expressions 
+
+--- Page 22 ---
+COMP  - 22.- Compilers Lexical Analysis 
+Regular expressions “output” 
+•We can verify if a string belong to the language specified by the regular expression 
+–True/false answer 
+•We need the tokens as the answer 
+--- Page 23 ---
+COMP  - 23.- Compilers Lexical Analysis 
+Finite Automata 
+(Implementation of regular 
+expressions) 
+A regular expression is implemented with 
+an automaton 
+--- Page 24 ---
+COMP  - 24.- Compilers Lexical Analysis 
+Automatic Lexer Construction 
+•To convert a specification into code: 
+1. Write down the RE for the input language 
+2. Build a big NFA 
+3. Build the DFA that simulates the NFA 
+4. Systematically shrink the DFA 
+5. Implement the DFA 
+•Lexer generators 
+–Lex and flex work along these lines 
+–Algorithms are well-known and well-understood 
+•In P2, we do some steps manually and create a gener ic 
+engine to implement the automata as decided in each  
+solution (one or many, DFA or NFA) 
+–The automata are language specification provided as input 
+--- Page 25 ---
+COMP  - 25.- Compilers Lexical Analysis 
+Finite Automata 
+•Regular expressions = specification 
+•Finite automata = implementation 
+•A finite automaton is defined by 
+–An input alphabet ∑ 
+–A set of states S
+–A start state n (only one state from the set S) 
+–A set of accepting states F (a subset of S, F ⊆ S) 
+–A set of transitions between states: subset of SxS 
+--- Page 26 ---
+COMP  - 26.- Compilers Lexical Analysis 
+Transition notations 
+state: input state state input state 
+s1: a s2 s1as2
+Both mean: if automaton is in state s 1, reading a 
+character ‘a’ in the input takes the automaton in s tate s 2
+(we will use both indistinctively) If when reaching the end of input, the automaton is in an accepting state => 
+accept the input; otherwise reject it
+--- Page 27 ---
+COMP  - 27.- Compilers Lexical Analysis 
+Finite Automata as Graphs 
+A state (state s) 
+The start state (state n) 
+An accepting state (state s) 
+A transition (from state s1 to 
+state s2 with the a input) 
+
+--- Page 28 ---
+COMP  - 28.- Compilers Lexical Analysis 
+Automaton Example (I) 
+•What input does the following automaton accept? 
+It accepts the word “if” 
+
+--- Page 29 ---
+COMP  - 29.- Compilers Lexical Analysis 
+Automaton Example (II) 
+•What input does the following automaton accept? 
+It accepts the word 1 
+
+--- Page 30 ---
+COMP  - 30.- Compilers Lexical Analysis 
+Automaton Example (III) 
+•What input does the following automaton accept? 
+It accepts all strings that finish with 00 ==> regular expression? 
+(1+0)*00 
+--- Page 31 ---
+COMP  - 31.- Compilers Lexical Analysis 
+Lexical Analysis 
+Can we always represent a regular expression with a n 
+automaton? If we write a piece of code that implements 
+arbitrary 
+automata we have a generic piece of code (an engine) 
+that implements arbitrary regular expressions YES! 
+This is a lexer!
+--- Page 32 ---
+COMP  - 32.- Compilers Lexical Analysis 
+ε-Transitions 
+The epsilon (ε) transitions can move the automata fr om 
+state to state without consuming any input 
+state: ε state state εstate 
+Defines a non-deterministic finite automata (NFA) where there can be 
+multiple possible transitions from a 
+given input symbol at a state 
+a*b*c*d*e 
+
+--- Page 33 ---
+COMP  - 33.- Compilers Lexical Analysis 
+DFA vs NFA Example 
+NFA: a*b*c*d*e 
+DFA? εn s1 s2 s3 s4 b c d
+ε εa
+e
+Any regular language can be defined by either NFA &  DFA b
+s4 b c d
+c da
+e
+edd
+n s1 s2 s3 
+eec
+--- Page 34 ---
+COMP  - 34.- Compilers Lexical Analysis 
+Deterministic and Non-deterministic FA •
+A deterministic finite automata DFA is defined as an 
+automaton that can only have one transition per inp ut 
+symbol per state 
+–It can take just one path at any given time for a particular input 
+–Accept the input if at the end of the input the automaton is at one accepting state 
+•Non-deterministic finite automata NFA is defined as an 
+automaton that can have zero (ε), one, or multiple 
+transitions per input symbol per state :
+–The NFA automaton have to keep track of multiple paths 
+simultaneously 
+–Accept the input if at the end of the input the automaton is at 
+least at one accepting state 
+--- Page 35 ---
+COMP  - 35.- Compilers Lexical Analysis 
+DFA vs NFA Properties 
+•Both can describe the same set of languages (regula r 
+languages) 
+•DFAs are faster to execute (as there are no choices  to 
+consider) 
+•For some given languages the NFA can be simpler tha n 
+DFA 
+•DFA can be exponentially larger than NFA 
+--- Page 36 ---
+COMP  - 36.- Compilers Lexical Analysis 
+Convert Regular Expressions to NFAs 
+•For each regular expression, define an NFA 
+•Thompson’s construction (idea in 1968): systematically 
+convert regular expressions (REs) into a finite sta te 
+automata 
+•Key idea: Define a Finite Automata “pattern” for each RE 
+operator 
+–Start with atomic REs, build up a big NFA 
+•Notation: NFA for regular expression M 
+
+--- Page 37 ---
+COMP  - 37.- Compilers Lexical Analysis 
+Thompson’s construction 
+•For each atomic regular expression, define an NFA 
+•Notation: NFA for regular expression M 
+•For ε
+•For input a 
+•For AB 
+•For A+B 
+
+--- Page 38 ---
+COMP  - 38.- Compilers Lexical Analysis 
+Thompson’s construction II 
+•For ε
+•For input a 
+•For AB 
+•For A+B 
+•For A* 
+
+--- Page 39 ---
+COMP  - 39.- Compilers Lexical Analysis 
+Example of RegExp to NFA conversion I 
+•Regular Expression: (1+0)*1 
+0
+1ε
+ε εε 1+0 
+A+B 
+--- Page 40 ---
+COMP  - 40.- Compilers Lexical Analysis 
+Example of RegExp to NFA conversion II 
+•Regular Expression: (1+0)*1 
+0
+1ε
+ε εε1+0 
+A* (1+0)* 
+ε ε
+εε
+--- Page 41 ---
+COMP  - 41.- Compilers Lexical Analysis 
+Example of RegExp to NFA conversion III 
+•Regular Expression: (1+0)*1 
+1
+0
+1ε
+ε εεε
+εε (1+0)* 
+ε(1+0)*1 
+AB 
+--- Page 42 ---
+COMP  - 42.- Compilers Lexical Analysis 
+Example of RegExp to NFA conversion IV 
+•Regular Expression: (1+0)*1 
+1
+0
+1ε
+ε εεε
+εε (1+0)* 
+ε(1+0)*1 
+--- Page 43 ---
+COMP  - 43.- Compilers Lexical Analysis 
+Example of RegExp to NFA conversion IV 
+•Regular Expression: (1+0)*1 
+•A human can define a simple NFA, however, this is a  
+systematic approach for (automatic) implementation 
+–The next step is to reduce it (systematically too) 
+0
+1ε
+ε εε
+ε
+εε(1+0)* 
+ε(1+0)*1 
+A BC
+DE
+Fε
+G H I J1
+J
+--- Page 44 ---
+COMP  - 44.- Compilers Lexical Analysis 
+Step 2: From NFA to DFA 
+•Each state of DFA corresponds to a non-empty subset  of 
+states of NFA 
+•Starting state of the DFA is an state that contains all 
+states of the NFA that are starting state and can b e 
+reached from the starting state with ε-transitions 
+–From A state can be reached BCDHI states state 1 of DFA 
+•Add a transition SaS’ in a DFA state iff:
+–S’ is the set of NFA states reachable from any state in S a fter 
+seeing the input a, considering ε-transitions also 
+•From state 1 with a 0 it goes to state 2 which corr esponds in being in 
+FGHIABCD 
+•From state 1 with a 1 it goes to state 3 which corr esponds being in 
+EGHIJABCD (this is also a final state) 
+•Final DFA states are those DFA states which includes at 
+least one NFA final state 
+–State 3 is final because is the only one including state J 
+--- Page 45 ---
+COMP  - 45.- Compilers Lexical Analysis 
+Example NFA to DFA 
+1
+0ε
+ε εε
+ε
+εε
+εA BC
+DE
+Fε
+G H I J1
+J
+12
+31200
+0
+1
+131
+--- Page 46 ---
+COMP  - 46.- Compilers Lexical Analysis 
+Implementation 
+•A DFA can be implemented by a 2D Table T 
+–One dimension is the states 
+–Other dimension is the input symbol 
+–For every transition S iaSjdefine T[i, a] = k 
+•DFA execution: 
+–If in state S iand input a, read T[i, a] = k and go to state Sk
+0 1
+1 2 32 2 33 2 31200
+0
+1
+131
+--- Page 47 ---
+COMP  - 47.- Compilers Lexical Analysis 
+Implementation 
+•NFA to DFA conversion is the heart of tools such as  
+flex 
+•But DFAs can be huge 
+•In practice flex-like tools trade off speed for spa ce in the 
+choice of NFA and DFA implementation 
+--- Page 48 ---
+COMP  - 48.- Compilers Lexical Analysis 
+Implementing a Lexer 
+1. Define the regular expressions for each token categ ory 
+2. Define an NFA for each RE 
+3. Convert the NFA (automatically) to a DFA 
+4. Write the code to implement the DFA 
+1. Implement the transition table 
+5. Implement your lexer as a set of DFAs 
+All these steps have to be generic engines to apply the 
+translation automatically to each input code. These steps have been understood for decades and no w 
+there are the automatic lexer tools (lex, flex) We don’t implement all these automatic steps in prac tices 
+--- Page 49 ---
+COMP  - 49.- Compilers Lexical Analysis 
+Lexer Implementation 
+Two approaches: 
+•By hand : code by hand the lexer (in this course) 
+–Start with the description for the lexemes of each token, and derive the automata of the language 
+–Write code to identify each occurrence of each lexeme on the output to return the list of tokens identified 
+•Write a generic engine that runs (NFA or DFA) autom ata 
+•Automatically : use a lexer generator (not in this course) 
+–Specify the lexeme patterns to a lexical-analyzer generator 
+•Write the engine that automatically identifies the automata based on the 
+language description 
+–Compile those patterns into code that works as lexical analyzer 
+•Write the generic engine that runs the automata (as  identified 
+automatically) 
+--- Page 50 ---
+COMP  - 50.- Compilers Lexical Analysis 
+Summary 
+•The lexical analyzer identifies the lexemes (vocabulary) 
+of the input and encodes them in tokens (lexeme, 
+category) 
+•The identification of lexemes is done defining the 
+regular expression that defines them 
+•Regular expressions are implemented by automata 
+–NFA – non-deterministic finite automata 
+–DFA – deterministic finite automata 
+•Lexical analysis process 
+–Define: alphabet , possible strings (dictionary - table of tokens) 
+–Define the Regular Expressions for each acceptable lexeme 
+–Define the DFA that represent the REs (you may need to first define NFA and transform it to DFA) 
+–Implement the DFA for each regular expression 
+–Execute the DFA with an input to get the tokens or errors 

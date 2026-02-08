@@ -64,7 +64,7 @@ typedef enum {
  *   cs:      initialised char stream
  *   tokens:  initialised (empty) token list to fill
  *   lg:      logger for error/debug messages
- *   cnt:     counter for operation counting (may be NULL if COUNTCONFIG off)
+ *   cnt:     counter for operation counting (may be NULL)
  * Returns 0 on success.
  */
 int automata_scan(char_stream_t *cs, token_list_t *tokens, logger_t *lg,

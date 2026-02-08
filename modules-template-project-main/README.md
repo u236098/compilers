@@ -26,6 +26,7 @@ isolation.
 - **Unterminated literal** detection and error reporting.
 - **Output format**: RELEASE (tokens per source line) or DEBUG (with line numbers and separator lines), controlled by `OUTFORMAT` preprocessor option.
 - **Operation counting** with `COUNTCONFIG`, `COUNTCOMP`, `COUNTIO`, `COUNTGEN` preprocessor flags.
+- **Count output routing** with `COUNTOUT` and `COUNTFILE` (`.cdbgcnt` naming supported).
 - **Centralized error handling** with error IDs, phase (step) identifiers, and context messages.
 - **Logger** routing (stdout or file) controlled by `DEBUG_FLAG`.
 - **Future parser hook**: in-memory token list ready for parser consumption.
@@ -172,6 +173,6 @@ cmake -DCMAKE_C_FLAGS="-DOUTFORMAT=1 -DDEBUG_FLAG=1 -DCOUNTCONFIG" ..
 - The scanner is designed to be extended: the in-memory token list can be
   passed directly to a future parser module without re-reading the file.
 - All language-dependent constants are in `lang_spec/lang_spec.h`.
+- The project language specification file is `src/lang_spec/lang_spec.h` (source of truth for tokens, keyword set, operators, and separators).
 - No string library functions are used for keyword recognition in the
   input stream (character-by-character comparison only).
-

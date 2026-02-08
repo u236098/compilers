@@ -31,6 +31,21 @@ typedef struct {
     long gen;      /* general instruction counter */
 } counter_t;
 
+/* ---- Count output routing configuration ---- */
+#define COUNTOUT_STDOUT 0
+#define COUNTOUT_OUT    1
+
+#ifndef COUNTOUT
+#define COUNTOUT COUNTOUT_STDOUT
+#endif
+
+#define COUNTFILE_DBGCNT 0
+#define COUNTFILE_OUTPUT 1
+
+#ifndef COUNTFILE
+#define COUNTFILE COUNTFILE_DBGCNT
+#endif
+
 /*
  * counter_init - reset all counters to zero.
  */
@@ -62,9 +77,9 @@ void counter_print(const counter_t *cnt, FILE *dest, const char *func_name,
 /* ---- Preprocessor macros for zero-overhead counting ---- */
 #ifdef COUNTCONFIG
 
-#define CNT_COMP(cnt, n)  counter_add_comp(&(cnt), (n))
-#define CNT_IO(cnt, n)    counter_add_io(&(cnt), (n))
-#define CNT_GEN(cnt, n)   counter_add_gen(&(cnt), (n))
+#define CNT_COMP(cnt_ptr, n)  counter_add_comp((cnt_ptr), (n))
+#define CNT_IO(cnt_ptr, n)    counter_add_io((cnt_ptr), (n))
+#define CNT_GEN(cnt_ptr, n)   counter_add_gen((cnt_ptr), (n))
 
 #else
 
