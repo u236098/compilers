@@ -3,7 +3,7 @@
  * main.c
  *
  * Scanner driver (Practice 2 — Lexical Analysis).
- * This is a wrapper function that calls the scanner modules.
+ * This is the driver that orchestrates the scanner pipeline.
  *
  * Usage: ./scanner <input.c>
  *
@@ -29,7 +29,6 @@ static void print_usage(const char *prog_name) {
 }
 
 #ifdef COUNTCONFIG
-#if OUTFORMAT == OUTFORMAT_DEBUG
 // Routes count summary to stdout, .cscn, or .cdbgcnt according to flags.
 static void write_count_summary(const char *input_filename,
                                 const char *output_filename,
@@ -56,7 +55,6 @@ static void write_count_summary(const char *input_filename,
         fclose(dest);
     }
 }
-#endif
 #endif
 
 // Orchestrates scanner execution for one input file.
@@ -114,7 +112,7 @@ static int run_scanner(const char *input_filename) {
     if (debug_out != NULL) {
         fclose(debug_out);
         debug_out = NULL;
-        logger_init(&lg, NULL);
+        logger_init(&lg, stdout);
     }
 
     // Write token file.
@@ -130,9 +128,7 @@ static int run_scanner(const char *input_filename) {
     fprintf(stdout, "Tokens found: %d\n", tl_count(&tokens));
 
 #ifdef COUNTCONFIG
-#if OUTFORMAT == OUTFORMAT_DEBUG
     write_count_summary(input_filename, output_filename, &cnt);
-#endif
 #endif
 
     // Future hook: parser can consume the in-memory token list here.
