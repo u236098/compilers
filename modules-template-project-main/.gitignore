@@ -29,3 +29,11 @@
 # Ignore OS-specific files
 .DS_Store
 Thumbs.db
+
+# Ignore scanner output files
+*.cscn
+*.dbgcnt
+
+# Ignore CodeQL build artifacts
+_codeql_build_dir/
+_codeql_detected_source_root

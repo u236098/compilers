@@ -22,4 +22,13 @@ target_include_directories(test_module_2 PRIVATE ${PROJECT_SOURCE_DIR}/src)
 add_test(NAME TestModule_2 COMMAND test_module_2)
 message(STATUS " - (${PROJECT_NAME}) Test for module_2 added")
 
+# Test for scanner (lexical analysis modules)
+add_executable(test_scanner test_scanner.c)
+target_link_libraries(test_scanner PRIVATE
+    lang_spec char_stream token token_list automata out_writer
+    error_mod logger counter)
+target_include_directories(test_scanner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+add_test(NAME TestScanner COMMAND test_scanner)
+message(STATUS " - (${PROJECT_NAME}) Test for scanner added")
+
 message(STATUS " - (${PROJECT_NAME}) Test configuration (executables) completed.")

@@ -24,9 +24,21 @@ add_library(utils STATIC utils_files.c)
 target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 message(STATUS "   - (${PROJECT_NAME}) Added utils library")
 
-# Add modules subdirectories
+# Add original template modules
 add_subdirectory(module_args)
 add_subdirectory(module_2)
-message(STATUS "   - (${PROJECT_NAME}) Added modules subdirectories")
+message(STATUS "   - (${PROJECT_NAME}) Added original template modules")
+
+# Add scanner modules (Practice 2 - Lexical Analysis)
+add_subdirectory(lang_spec)
+add_subdirectory(char_stream)
+add_subdirectory(token)
+add_subdirectory(token_list)
+add_subdirectory(error_mod)
+add_subdirectory(logger)
+add_subdirectory(counter)
+add_subdirectory(automata)
+add_subdirectory(out_writer)
+message(STATUS "   - (${PROJECT_NAME}) Added scanner modules")
 
 message(STATUS "(${PROJECT_NAME}) Finished including module subdirectories.")
