@@ -162,8 +162,8 @@ static int scanner_next_token(char_stream_t *cs, token_list_t *tokens,
     scan_state_t last_accept_state = ST_STOP; /* ST_STOP = no accept yet */
     char buf[MAX_LEXEME_LEN];
     int buf_len = 0;
-    int tok_line = 0;
-    int tok_col = 0;
+    int tok_line = cs_line(cs);
+    int tok_col = cs_col(cs);
     int ch;
     char_class_t cls;
     scan_state_t next;
