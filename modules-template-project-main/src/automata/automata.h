@@ -53,9 +53,10 @@ typedef enum {
     ST_ACCEPT_OP   = 4,  /* accepted an operator          */
     ST_ACCEPT_SC   = 5,  /* accepted a special char       */
     ST_IN_NONREC   = 6,  /* accumulating non-recognized   */
-    ST_ACCEPT      = 7,  /* generic accept (token done)   */
+    ST_LIT_END     = 7,  /* accepted a literal (closing quote) */
     ST_ERROR       = 8,  /* error (e.g. unterminated lit) */
-    ST_COUNT       = 9   /* total states                  */
+    ST_STOP        = 9,  /* stop / do not consume         */
+    ST_COUNT       = 10  /* total states                  */
 } scan_state_t;
 
 /*
