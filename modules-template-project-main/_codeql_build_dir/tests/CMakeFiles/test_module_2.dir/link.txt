@@ -1,0 +1,1 @@
+/home/runner/work/compilers/.codeql-scratch/dbs/cpp/working/autobuild/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_module_2.dir/link.d CMakeFiles/test_module_2.dir/test_module_2.c.o -o test_module_2  ../src/module_2/libmodule_2.a ../src/libutils.a
