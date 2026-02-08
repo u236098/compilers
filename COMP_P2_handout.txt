@@ -1,0 +1,365 @@
+
+--- Page 1 ---
+Compilers, Dolors Sala 
+ 
+                                   1 
+ 
+Practice 2 Lexical Analysis 
+In this practice we work the lexical analysis by im plementing a simple scanner. There is work to be do ne 
+in paper to build the regular expressions and autom ata to later implement them.  
+1 Language definition 
+We want to support the following language specifica tion, which is a very small sub-set of c requiremen ts. 
+For this scanner assignment we just treat the words . In the following assignment (parser), the 
+specification may be further limited to reduce the parser complexity.  
+ 
+The scanner specification must consider: 
+ No preprocessing : We assume there are no preprocessing directives ( starting with #), nor 
+comments in the input file to the scanner. Either t he input file will not have these elements, or it 
+will use the preprocessor implemented by us to elim inate them (the ones supported by the 
+preprocessor). In either case, the input file to th e scanner cannot have any of these elements. 
+ Alphabet : you have to derive the alphabet of the language a s a result of the specification of 
+lexemes describe next. Clearly indicate it in the d ocumentation. 
+ Types : The language has to support the following types: int, char, void . Note that with the 
+combination of these types and special characters a nd operators, the scanner (specified next) will 
+recognize vector, matrix and pointer types of these  basic types. Although note that this is just a 
+scanner and it does not interpret the syntax or sem antics of the code. 
+Examples: 
+int n = 3; 
+char vect[2]; 
+double *vect; 
+int vect[]={1,2}; 
+ 
+ Operators : The scanner has to recognize the 4 following oper ators: = >  +  *   
+ Especial characters : It must recognize the following 8 special charact ers: ( ) ; { } [ ],  
+ Numbers : The numbers are limited to a combination of only integers. It does not support 
+fractional, exponential or hexadecimals (no decimal s nor chars). Any combination of digits 0 to 9, 
+including 0’s at the beginning of the number. 
+ Keywords : if, else, while, return  
+ Non-essential characters : space, eol, tabs (and similar delimiter character s). These characters are 
+used as delimiters. 
+ Identifiers /variables: Any set of strings with a combination o f capital and lower case chars and 
+numbers and different of any keyword already mentio ned that has a special meaning. The 
+identifier has to start with a letter and not a num ber and it cannot contain any other character 
+different than the mentioned ones. We restrict also  that any identifier cannot start with a substring 
+of another identifier or any keyword, this means, t hat every character at the beginning will 
+identify what identifier is (lookahead of 1). (Ther e are two keywords that start with i: int and if. 
+These are the only exception to be handle of having  same prefix.). Note that any typo may 
+produce different words. For example: wile as a typ o of while missing the h can be recognized as 
+identifier instead of the keyword while. But note t hey can share a prefix. We do not support typos. 
+ Literal : Any text delimited by “ ” . The lexeme includes the “ ”. Example: “core dumpe d”. The 
+characters in between are not processed and we acce pt any character that belongs to the alphabet. 
+We assume there are no characters that do not belon g to the alphabet. 
+ Non-recognized : Any lexeme (character or word) not supported shou ld generate an informative 
+error message, generate a non-recognized token in t he output and the scanner should continue 
+--- Page 2 ---
+Compilers, Dolors Sala 
+ 
+                                   2 
+with the next lexeme. If there is a consecutive set  of non-recognized characters, they all should be 
+grouped in a single non-recognized lexeme and singl e error message for this lexeme. 
+2 Tokens 
+A token is defined as: <lexeme, category> 
+ 
+Where the lexeme  is the string that identifies the token, and the category  is the classification of the token 
+to be used in later phases of the compiler (as expl ained in theory).  
+ 
+You have to identify what lexemes are needed and de cide what category you assign to each lexeme. This 
+category defines the use of the token in the follow ing compiler phases. Hence these categories may nee d 
+to be adjusted in the following phase. We may later  need to define additional lexemes not considered 
+now, and we may need to define additional categorie s for the new lexemes or to group the lexemes 
+differently and hence modify the category of curren t lexemes. 
+ 
+Define a flexible and easy to modify design of the token specification. 
+ 
+Right now consider the following categories  of the lexemes: 
+ CAT_NUMBER : for the numbers as described in previous section.  
+ CAT_IDENTIFIER : for the identifiers as described in the previous section. 
+ CAT_KEYWORD : for all keywords of the language that are describ ed in the previous section. 
+ CAT_LITERAL : for all literals as described in the previous sec tion. 
+ CAT_OPERATOR : for all operators as described in the previous se ction. 
+ CAT_SPECIALCHAR : for all special characters as described in the pr evious section. 
+ CAT_NONRECOGNIZED : for all lexemes that do not follow any of the spe cification above. One 
+example can be an identifier that has a prefix, and  hence it cannot be supported. Any lexeme that 
+cannot be supported should be included in this cate gory. Document well what options you 
+consider in this case. 
+ 
+We can anticipate already, that the syntax of the d ifferent keywords, operands and special characters 
+follow different syntactic rules and hence some mor e category differentiation will be needed for the 
+parser assignment. So right now we are more interes ted on how the categories are implemented than how 
+many are implement. 
+ 
+2.1  The token list 
+Internally, the scanner has to create a list of tok ens including all tokens identified as specified ab ove and 
+in the order they appear in the input (and are bein g identified by the scanner). 
+ 
+Eventually, this list of tokens will be passed to a  parser (to be worked in the next assignment) as th e next 
+step of the compiler. 
+ 
+To know what the scanner is doing, the list of toke ns should be provided in a file as the output of th e 
+scanner phase as indicated in the following output section. 
+3 Output 
+The file has to provide a written version of the to ken list so we can verify that it keeps the correct  token 
+list in memory. 
+The scanner must create a new file adding the suffi x scn  to the extension, as follows: 
+  <filename>.<ext>scn 
+ 
+--- Page 3 ---
+Compilers, Dolors Sala 
+ 
+                                   3 
+Since we do not allow preprocessing, the .h files a re not allowed (or already processed by the 
+preprocessor). Hence the only extension of the inpu t file  <ext> is  .c  and the output file extension is cscn. 
+However, the program should create the output exten sion as the input extension concatenated with the s cn 
+suffix. 
+ 
+Example: executing the scanner to the file example_ app.c should produce an output file named 
+example_app.cscn. It changes the extension as the c ontent of this file now has a different format as i t 
+contains sequences of tokens instead of a c languag e.  
+ 
+The format of the tokens in the output file has to be configurable with preprocessing configuration. W e 
+want to add information in the output format while we are debugging, and this extra information should  
+not be put in a release version. 
+ 
+The tokens in the output (text) file may be written  in different form depending on a OUTFORMAT  
+preprocessor variable that can take at least two fo rms (you can define more options if you want): 
+ RELEASE : The release format is defined for the compiler us e of the output file and it must put the 
+sequence of tokens as is expected to be used by the  parser. The format has to be agreeded as we 
+can use anyone’s parser in the following phase. Our  format has to organize the tokens in the same 
+lines as the lines of code in the input c file. The refore, the input and output files should have the 
+same number of (information) lines but with differe nt information: 
+o Each line of code (any sequence of characters) in t he input translates to one line of tokens 
+in the output. The tokens appear as is in sequence each one separated by one space 
+character. 
+o The token file should not have empty lines . So the empty lines of the input to separate the 
+code are eliminated in the output file. 
+Example:  
+Input c file: 
+if(x > 3) 
+ printf(“true”); 
+else 
+ printf(“false”); 
+ 
+output tokens file: 
+<if, CAT_KEYWORD> <(, CAT_SPECIALCHAR> <x, CAT_IDEN TIFIER> <), 
+CAT_SPECIALCHAR> <3, CAT_NUMBER> 
+<printf, CAT_IDENTIFIER> <(, CAT_SPECIALCHAR> <”tru e”, CAT_LITERAL> <;, 
+CAT_SPECIALCHAR> 
+<else, CAT_KEYWORD> 
+<printf, CAT_IDENTIFIER> … 
+ 
+ DEBUG : This option is to debug and we want to be able to  follow what it contains by looking at 
+it. So it has to be easy to see and it puts extra i nformation to follow the process. Therefore, the 
+format is: 
+o It should follow the RELEASE format but in addition  it has to provide the following. 
+o There should be an empty line after every token lin e to distinguish the different potentially 
+very long token lines. 
+o Each token line starts with a line number, and this  line number has to be the line number of 
+the input file containing the code that correspond to this token line. This way we can easily 
+match the line of tokens with a particular line in the input. 
+o The debugging messages (see next section) should be  written at the output file. So the 
+messages are related with the tokens. 
+o Any particular format you prefer to use so to follo w better the process. Note that you can 
+use anything that works for you as this format is j ust for your use, and it is not used for a 
+--- Page 4 ---
+Compilers, Dolors Sala 
+ 
+                                   4 
+final release version. So it does not need to be re cognized by anyone else (parser). For 
+example, you may prefer to have each token in a dif ferent line and hence a group of lines 
+be one single input line. 
+o We use this format to print additional information as described in following sections. 
+ 
+(Previous) Example:  
+output tokens file: 
+1 <if, CAT_KEYWORD> <(, CAT_SPECIALCHAR> <x, CAT_ID ENTIFIER> <), 
+CAT_SPECIALCHAR> <3, CAT_NUMBER> 
+ 
+3 <printf, CAT_IDENTIFIER> <(, CAT_SPECIALCHAR> <”t rue”, CAT_LITERAL> <;, 
+CAT_SPECIALCHAR> 
+ 
+5 <else, CAT_KEYWORD> 
+ 
+7 <printf, CAT_IDENTIFIER> … 
+ 
+ Other options : you can decide any option you feel useful and exp lain and document them 
+appropriately in the design slides. 
+4 Debugging 
+We want to have the possibility to redirect the err or messages to the display (stdout) or to intermix them 
+with the output at the output file. 
+ 
+We want a configuration preprocessor directive call ed DEBUG  which can have two values: 1) ON = 1 
+which indicates that (all) messages are written to the output file; 2) OFF = 0 which indicates that al l are 
+written at the stdout. This means the application h as to always write to a file (use always fprintf in stead of 
+printf), and the file handler to be used should be initialitzed to sdtout or the output file name when  the 
+DEBUG is configured to OFF or ON respectively. 
+ 
+Modifying this directive, we obtain different versi ons of the executable. Hence, this is a configurati on 
+“parameter” of the application, and as such it need s the corresponding documentation to inform the use r 
+(programmer) how to use it. Therefore, the user’s m anual has to have all necessary information to find  
+this directive, know what exactly it does and how t o modify it to get the option requested. This 
+information has to appear also in the man page, and  it can also be given to display when there is an e rror 
+in how it is used so to inform the programmer of ev erything necessary to modify it right. In addition,  the 
+decisions taken of where it is and why, should be c learly explained in the developer’s manual.  
+ 
+You can use this flag to have error messages only a ctive when you are debugging. However, once you 
+have identified possible errors you may want to kee p the identification active always to detect possib le 
+implementation errors once the application is compl eted and not configured as debug but as a real rele ase. 
+5 Error handling 
+We do not expect a full implementation of possible errors and combinations. But we want a general 
+approach to error handling. The errors have to be i dentified by a number and use the same error messag e 
+for the same error in different places of the appli cation. However, the message can include parameters  
+that indicate concret information of where the erro r happens and additional relevant data.  
+ 
+The same organization of errors will be used for th e following assignment (a parser). So we need to th ink 
+that there will be scanner specific messages, parse r specific messages and potentially other categoriz ation. 
+So the errors have to have a unique error identifier  and a step  identifier. The step is the phase of the 
+compiler that informs and identifies whether this e rror happens in the scanner or parser (and potentia lly 
+--- Page 5 ---
+Compilers, Dolors Sala 
+ 
+                                   5 
+we can leverage the ones of the previous assignment  and have preprocessor errors). And we could have a  
+smaller step than a full phase of the compiler.  
+ 
+It has to be designed how to implement the error list  in the developer’s manual. In the middle of the co de 
+we just have a link to an error identifier and pass  the specific text to add to the general error mess age text. 
+ 
+The error messages should be written where the DEBU G flag indicates. 
+6 The core of the scanner design 
+ 
+The scanner needs to process the input c code to ge nerate the output as a stream of tokens. So it need s to 
+design the regular expressions  for the language specified and design the automata  to implement them. 
+ 
+Note that the scanner has to work character by char acter and hence it is forbidden in this assignment to 
+use the string library to identify a keyword in the  input . It may seem simpler, but at the end these 
+functions hide a character-by-character identificat ion. So they hide the operations that we would desi gn if 
+we handle the characters. We are interested in seei ng these differences and understand the impact of o ur 
+operations. Hence we will count how many operations  we do as explained in the following sections. 
+ 
+Each keyword  is a simple regular expression and hence an automa ton, that each character transitions to a 
+next state until all characters of the keyword are processed (see examples in theory slides). There is  only 
+one acceptable transition in each state which is th e next character of the keyword. Any other symbol a t 
+this state stops the recognizion of this keyword. I f we send all these characters to an empty state (q ᴓ) we 
+can have a DFA specification for each keyword. 
+ 
+At this level, the special characters  are also an automaton but to recognize a string of  just one character. 
+With this we have covered the keywords, operators a nd special characters. 
+ 
+The numbers , identifiers  and literals  have a little more general automaton design. Some of them have 
+been covered as example in the theory slides. The r estrictions of the specifications limit the design of 
+these automata significantly. So they are still sma ll automata, and more importantly, it simplies the 
+implementation of the whole set of automata. (If yo u need further simplication make the proposal as 
+indicated below) 
+ 
+There are different approaches in implementing all automata together. One is to have a list of automat a 
+that we run all of them in parallel, until one succ eeds. The restrictions are such that if one succeed s we 
+can stop and generate the token, and reinitialize a ll of them again to continue the parsing of the inp ut for 
+identifying the next token. It can happen that no a utomata finish successfully and in this case we sho uld 
+recognize the read sub-string as a non-recognized t oken at the point that all automata fail.  
+ 
+If we think about this list of automata running tog ether is like implementing a big NFA that connects all 
+DFA’s that we have designed with ε-transitions. So,  a second approach would be to consider this 
+implementation as one NFA, and create the transitio n table of this NFA with multiple transitions at a 
+time. One third approach would be to transform this  NFA as the corresponding DFA that it would 
+eliminate all ε-transitions but it will have more s tates. There may be more approaches to this design.  You 
+can decide your approach and explain your design in  the developer’s manual (and in the user’s manual i f 
+it has impact in the use of the application). 
+ 
+--- Page 6 ---
+Compilers, Dolors Sala 
+ 
+                                   6 
+7 Number of Operations 
+ 
+We want to understand how many operations the imple mentation takes so we can discuss different 
+approaches with specific impact measuresof. Any imp lementation is correct, even it is inefficient. But  we 
+are interested in measuring it. 
+ 
+So we want to measure how many operations are neede d to identify each token. We request to do this 
+analysis in paper an include a section in the devel oper’s manual to explain it. 
+ 
+We also want the program to compute the exact numbe r of operations it takes. We will do this at the 
+preprocessor level with a COUNTCONFIG  flag, so it can be eliminated in a RELEASE format but 
+included in a DEBUG code. Note that counting means incrementing a variable any time that the action 
+happens. So if we do it for every comparison we cou ld be doubling the number of operations we have in 
+the normal operation of the code. So if this code r emains in a release version it slows down significa ntly 
+the program. So it is important to implement it at the preprocessor level.  
+ 
+So we request to implement at the preprocessing lev el the following constants: 
+1.  COUNTCOMP : This counter should count the number of compariso ns being made. If an 
+instruction “if” (or any other) do 2 comparisons, i t should count 2.  
+2.  COUNTIO : This counter should count the input/output instru ctions, incrementing the counter by 
+the number of characters read or write (to file or display, as these operations as much slower than 
+moves in memory, and relates to the number of passe s/reads you do) for each individual 
+instruction. 
+3.  COUNTGEN : This general counter should count each individual  instruction of the rest of 
+instruction types. 
+4.  COUTNOUT : This flag indicates where to send the print messa ges. If COUNTOUT is OUT=1, 
+the messages should be sent to the output file. Whe n the COUNTFILE is DBGCOUNT=0, it 
+should be created a new file just for the counting messages named in a string set in a 
+configuration constant named COUNTFILE . The name of the file has to be 
+<filename>.<ext>dbgcnt.  
+ 
+The informative messages should include:  
+1.  The line number processed of the input file that th e updates of the counter corresponds to. 
+2.  The function name where this update is done. 
+3.  The amount incremented 
+4.  The partial counting inside this function for each COUNT flag 
+5.  The total counting for each COUNT flag. 
+ 
+You should put the counter along the code so that i t keeps incrementing how many instructions are bein g 
+added as it passes to the different parts of the co de. And as indicated, we want to know the amount ad ded 
+per function (partial value of the counter) to get a feeling of how many operations are needed per tok en 
+type. 
+ 
+Where (in what file of your code) you put this conf iguration constant and how to use it should be 
+explained in the user’s manual and man page, and ap pear in an error message if it can create an idenfi able 
+error message.  
+ 
+Reminder: The counting applies only when the format is DEBUG, but  not in a RELEASE format .  
+ 
+--- Page 7 ---
+Compilers, Dolors Sala 
+ 
+                                   7 
+8 Interaction with next phase (parser) 
+ 
+The output of the scanner is the input of the parse r that we will (partially) work in the next assignm ent. 
+However, we want to make this submission independen t from the next one. So the specification has been 
+to produce an output file with the tokens as specif ied above, in addition of the token list in memory.  But 
+we want later to have the ability to continue the e xecution of the scanner and directly call the parse r 
+without having to load the file of tokens. 
+ 
+So it is important to have the main program of this  assignment to consider that it calls now the scann er 
+only but later it will call the parser too. So we w ill want the following parser assignment to have th e two 
+options: 1) to continue running the scanner in the same execution with all data structure in memory, a nd 
+2) start from scratch and load the tokens file and do the parser execution as independent program. 
+ 
+So now you should have into account this, and do th e program design to have this “hook” prepared for t he 
+following assignment.  
+ 
+9 Submission instructions 
+ 
+The same as Practice 1, except when you create the file submission, put P2 instead of P1. 
+ 
+10  Evaluation Criteria 
+ 
+The same as practice 1. 
+ 
+11  Copy and Plagiarism 
+In all submitted material put the team identity but  also list the set of the team members who have 
+participated in the submission. Do not put the name  of students who has not done any work. If any 
+student has a problem to participate in a particula r submission, let me know and we can discuss how to  
+handle the situation, and how to get this student t he corresponding work. 
+ 
+Remember that all work must be yours. You have to e xplain things in your own words, and the code has 
+to be written by you. You cannot use copy code from  other sources (books, other solutions, or any othe r), 
+and if you use ideas or material you have to put it  in your own words or programming.  
+ 
+Add a bibliography section in your report and do th e correct citations in the sections where you expla in 
+the ideas you have used from sources. It is a good practice to use sources and material, so explain it  if you 
+use them well. But do not copy from these sources. 
+ 
+Remember that you can discuss issues with other stu dents and teams, but you cannot exchange code or 
+text and used them as is. You can exchange ideas, b ut once you understand them, the team has to do you r 
+own version. 
